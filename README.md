@@ -38,7 +38,7 @@ After determining the correct VID/PID for your device, you can change them by us
 
 # TODO
 
-- [ ] Determine other VID/PIDs that are used in other systems. Will require users to report what they encounter in their own systems. Please report by commenting on Issue #1
+- [ ] Determine other VID/PIDs that are used in other systems. Will require users to report what they encounter in their own systems. Please report by commenting on [Issue #1](https://github.com/mscreations/Alien-Macros/issues/1)
 - [ ] Check system for any available/supported VID/PID automatically.
 - [ ] Allow customization of macro action
 
