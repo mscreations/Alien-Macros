@@ -20,11 +20,27 @@ Currently I'd advise against using it as this is more proof of concept than anyt
 
 :warning: ***If you decide to use it, you do so at your own risk.*** :warning:
 
-This is intended to be used alongside a tool such as [AutoHotKey](https://www.autohotkey.com/) to perform the actual macro functionality as AHK can do everything already without me having to figure out how to add that functionality.
+This is intended to be used alongside a tool such as [AutoHotKey](https://www.autohotkey.com/) to perform the actual macro functionality as AHK can do everything already without me having to figure out how to add that functionality. An example script can be found [here](./ExampleAHKScript.ahk).
+
+# Tested Systems
+
+| System | VID | PID | Macro Range |
+| ------ | --- | --- | ----------- |
+| Alienware m17 R4 w/Per-Key RGB | 0x0d62 | 0x1a1c | 0x4c-0x4f |
 
 # HELP! It doesn't work
 
 That's probably because you have a different keyboard VID/PID than my laptop's keyboard. Create an issue and we can look at adding it in. This would require a [Wireshark trace](https://github.com/mscreations/Alien-Macros/wiki/Wireshark-Trace) to verify the device and what your particular keyboard is sending.
+
+After determining the correct VID/PID for your device, you can change them by using command line arguments:
+
+`.\Alien-Macros.exe --vid 0x0d62 --pid 0x1a1c`
+
+# TODO
+
+- [ ] Determine other VID/PIDs that are used in other systems. Will require users to report what they encounter in their own systems. Please report by commenting on Issue #1
+- [ ] Check system for any available/supported VID/PID automatically.
+- [ ] Allow customization of macro action
 
 # Contributing
 
