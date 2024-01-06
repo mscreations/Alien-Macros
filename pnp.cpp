@@ -47,7 +47,7 @@ Routine Description:
     BOOLEAN                             done = FALSE;
     PHID_DEVICE                         hidDeviceInst;
     GUID                                hidGuid;
-    PSP_DEVICE_INTERFACE_DETAIL_DATA    functionClassDeviceData = NULL;
+    PSP_DEVICE_INTERFACE_DETAIL_DATA_A  functionClassDeviceData = NULL;
     ULONG                               predictedLength = 0;
     ULONG                               requiredLength = 0;
     PHID_DEVICE                         newHidDevices;
@@ -61,7 +61,7 @@ Routine Description:
     //
     // Open a handle to the plug and play dev node.
     //
-    hardwareDeviceInfo = SetupDiGetClassDevs ( &hidGuid,
+    hardwareDeviceInfo = SetupDiGetClassDevsA ( &hidGuid,
                                                NULL, // Define no enumerator (global)
                                                NULL, // Define no
                                                (DIGCF_PRESENT | // Only Devices present
@@ -129,7 +129,7 @@ Routine Description:
                 // goods about this particular device.
                 //
 
-                SetupDiGetDeviceInterfaceDetail (
+                SetupDiGetDeviceInterfaceDetailA (
                         hardwareDeviceInfo,
                         &deviceInfoData,
                         NULL, // probing so no output buffer yet
@@ -140,7 +140,7 @@ Routine Description:
 
                 predictedLength = requiredLength;
 
-                functionClassDeviceData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc (predictedLength);
+                functionClassDeviceData = (PSP_DEVICE_INTERFACE_DETAIL_DATA_A)malloc (predictedLength);
                 if (functionClassDeviceData)
                 {
                     functionClassDeviceData->cbSize = sizeof (SP_DEVICE_INTERFACE_DETAIL_DATA);
@@ -155,7 +155,7 @@ Routine Description:
                 // Retrieve the information from Plug and Play.
                 //
 
-                if (SetupDiGetDeviceInterfaceDetail (
+                if (SetupDiGetDeviceInterfaceDetailA (
                            hardwareDeviceInfo,
                            &deviceInfoData,
                            functionClassDeviceData,
@@ -185,7 +185,7 @@ Routine Description:
 
                         if (NULL != hidDeviceInst -> DevicePath) 
                         {
-                            StringCbCopy(hidDeviceInst -> DevicePath, iDevicePathSize, functionClassDeviceData -> DevicePath);
+                            StringCbCopyA(hidDeviceInst -> DevicePath, iDevicePathSize, functionClassDeviceData -> DevicePath);
                         }
                     }
                 }
@@ -267,7 +267,7 @@ RoutineDescription:
         goto Done;
     }
 
-    StringCbCopy(HidDevice -> DevicePath, iDevicePathSize, DevicePath);
+    StringCbCopyA(HidDevice -> DevicePath, iDevicePathSize, DevicePath);
     
     if (HasReadAccess)
     {
@@ -291,7 +291,7 @@ RoutineDescription:
     //  overlapped device
     //
 
-    HidDevice->HidDevice = CreateFile (DevicePath,
+    HidDevice->HidDevice = CreateFileA (DevicePath,
                                    accessFlags,
                                    sharingFlags,
                                    NULL,        // no SECURITY_ATTRIBUTES structure
@@ -355,7 +355,7 @@ RoutineDescription:
         CloseHandle(HidDevice->HidDevice);
         HidDevice->HidDevice = INVALID_HANDLE_VALUE;
 
-        HidDevice->HidDevice = CreateFile (DevicePath,
+        HidDevice->HidDevice = CreateFileA (DevicePath,
                                        accessFlags,
                                        sharingFlags,
                                        NULL,        // no SECURITY_ATTRIBUTES structure
