@@ -39,13 +39,5 @@
 
 #define READ_THREAD_TIMEOUT     1000
 
-typedef struct _READ_THREAD_CONTEXT
-{
-    PHID_DEVICE HidDevice;
-    BOOL        TerminateThread;
-
-} READ_THREAD_CONTEXT, * PREAD_THREAD_CONTEXT;
-
 DWORD StartMonitor(WORD targetVID, WORD targetPID);
-DWORD WINAPI ReadThreadProc(LPVOID lParam);
 void HandleMacroKey(USAGE macroKey);
