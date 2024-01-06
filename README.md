@@ -1,7 +1,8 @@
 # :alien: Alien Macros
 
-<a href="https://github.com/mscreations/Alien-Macros/actions/workflows/msbuild.yml"><img src="https://github.com/mscreations/Alien-Macros/workflows/MSBuild/badge.svg" alt="MSBuild" style="max-width: 100%;"></a>
-<a href="https://github.com/mscreations/Alien-Macros/blob/master/LICENSE"><img src="https://badgen.net/github/license/mscreations/Alien-Macros" alt="License" style="max-width: 100%;"></a>
+<a href="https://github.com/mscreations/Alien-Macros/actions/workflows/msbuild.yml" rel="nofollow"><img src="https://github.com/mscreations/Alien-Macros/workflows/MSBuild/badge.svg" alt="MSBuild" style="max-width: 100%;"></a>
+<a href="https://github.com/mscreations/Alien-Macros/actions/workflows/codeql.yml" rel="nofollow"><img src="https://github.com/mscreations/Alien-Macros/workflows/CodeQL/badge.svg" alt="CodeQL" style="max-width: 100%;"></a>
+<a href="https://github.com/mscreations/Alien-Macros/blob/master/LICENSE" rel="nofollow"><img src="https://badgen.net/github/license/mscreations/Alien-Macros" alt="License" style="max-width: 100%;"></a>
 
 ## What is it?
 
