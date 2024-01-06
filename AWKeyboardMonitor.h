@@ -48,3 +48,4 @@ typedef struct _READ_THREAD_CONTEXT
 
 DWORD StartMonitor(WORD targetVID, WORD targetPID);
 DWORD WINAPI ReadThreadProc(LPVOID lParam);
+void HandleMacroKey(USAGE macroKey);

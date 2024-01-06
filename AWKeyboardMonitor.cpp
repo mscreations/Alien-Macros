@@ -43,11 +43,12 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
     if (!FindKnownHidDevices(&tempDeviceList, &numberDevices))
     {
         std::cerr << "No HID devices found." << std::endl;
-        return 0;
+        return -1;
     }
 
     pDevice = tempDeviceList;
-    for (int iIndex = 0; (ULONG)iIndex < numberDevices; iIndex++) {
+    for (int iIndex = 0; (ULONG) iIndex < numberDevices; iIndex++)
+    {
         if (pDevice->Attributes.VendorID == targetVID &&
             pDevice->Attributes.ProductID == targetPID &&
             pDevice->Caps.UsagePage == AW_USAGEPAGE &&
@@ -56,20 +57,28 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
             iIndex = numberDevices;             // abort for loop now that we found the device we want.
             targetDevice = *pDevice;
         }
-        else {
+        else
+        {
             pDevice++;
         }
     }
     free(tempDeviceList);
     tempDeviceList = NULL;
 
+    if (NULL == targetDevice.DevicePath)
+    {
+        std::cerr << "Target device could not be located!" << std::endl;
+        return -1;
+    }
+
     std::cout << "Target Device located: " << targetDevice.DevicePath << std::endl;
 
     BOOL openForAsync = OpenHidDevice(targetDevice.DevicePath, TRUE, FALSE, TRUE, FALSE, &asyncDevice);
 
-    if (!openForAsync) {
+    if (!openForAsync)
+    {
         std::cerr << "Unable to open target HID device for async read" << std::endl;
-        return 0;
+        return -1;
     }
 
     readContext.HidDevice = &asyncDevice;
@@ -78,29 +87,31 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
     std::cout << "Starting monitor" << std::endl;
 
     readThread = CreateThread(NULL,
-        0,
-        ReadThreadProc,
-        &readContext,
-        0,
-        &threadID);
+                              0,
+                              ReadThreadProc,
+                              &readContext,
+                              0,
+                              &threadID);
 
-    while(true) { }
+    while (true) {}
 
     return 0;
 }
 
-DWORD WINAPI ReadThreadProc(LPVOID lParam) {
+DWORD WINAPI ReadThreadProc(LPVOID lParam)
+{
     HANDLE                  completionEvent;
     BOOL                    readResult;
     DWORD                   waitStatus;
     OVERLAPPED              overlap;
     DWORD                   bytesTransferred;
-    PREAD_THREAD_CONTEXT    Context = (PREAD_THREAD_CONTEXT)lParam;
+    PREAD_THREAD_CONTEXT    Context = (PREAD_THREAD_CONTEXT) lParam;
     PHID_DEVICE             pDevice = Context->HidDevice;
 
     completionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
-    if (NULL == completionEvent) {
+    if (NULL == completionEvent)
+    {
         ExitThread(0);
         return 0;
     }
@@ -111,7 +122,8 @@ DWORD WINAPI ReadThreadProc(LPVOID lParam) {
     {
         readResult = ReadOverlapped(Context->HidDevice, completionEvent, &overlap);
 
-        if (!readResult) {
+        if (!readResult)
+        {
             break;
         }
         while (!Context->TerminateThread)
@@ -127,40 +139,39 @@ DWORD WINAPI ReadThreadProc(LPVOID lParam) {
         if (!Context->TerminateThread)
         {
             UnpackReport(pDevice->InputReportBuffer,
-                pDevice->Caps.InputReportByteLength,
-                HidP_Input,
-                pDevice->InputData,
-                pDevice->InputDataLength,
-                pDevice->Ppd);
+                         pDevice->Caps.InputReportByteLength,
+                         HidP_Input,
+                         pDevice->InputData,
+                         pDevice->InputDataLength,
+                         pDevice->Ppd);
 
             USAGE usage = *pDevice->InputData->ButtonData.Usages;
 
-            if (usage >= MACROA && usage <= MACROD) {
-
-                std::cout << "Read key: 0x" << std::hex << usage;
-                switch (usage) {
-                case MACROA: std::cout << " Macro A" << std::endl; break;
-                case MACROB: std::cout << " Macro B" << std::endl; break;
-                case MACROC: std::cout << " Macro C" << std::endl; break;
-                case MACROD: std::cout << " Macro D" << std::endl; break;
-                }
-
-                INPUT inputs[2] = {};
-                ZeroMemory(inputs, sizeof(inputs));
-
-                inputs[0].type = INPUT_KEYBOARD;
-                inputs[0].ki.wVk = usage + 0x30;                            // Maps the macro keys to F13-F16
-
-                inputs[1].type = INPUT_KEYBOARD;
-                inputs[1].ki.wVk = usage + 0x30;
-                inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
-
-                SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+            if (usage >= MACROA && usage <= MACROD)
+            {
+                HandleMacroKey(usage);
             }
         }
     } while (readResult &&
-        !Context->TerminateThread);
+             !Context->TerminateThread);
 
     ExitThread(0);
     return 0;
+}
+
+void HandleMacroKey(USAGE macroKey)
+{
+    std::cout << "Read key: 0x" << std::hex << macroKey << " Macro " << (char) (macroKey - 0xb) << std::endl;
+
+    INPUT inputs[2] = {};
+    ZeroMemory(inputs, sizeof(inputs));
+
+    inputs[0].type = INPUT_KEYBOARD;
+    inputs[0].ki.wVk = macroKey + 0x30;                            // Maps the macro keys to F13-F16
+
+    inputs[1].type = INPUT_KEYBOARD;
+    inputs[1].ki.wVk = macroKey + 0x30;
+    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+
+    SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
 }
