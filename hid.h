@@ -56,7 +56,7 @@ typedef struct _HID_DATA
         } ButtonData;
         struct
         {
-            USAGE       Usage; // The usage describing this value;
+            USAGE       Usage;          // The usage describing this value
             USHORT      Reserved;
 
             ULONG       Value;
@@ -68,7 +68,7 @@ typedef struct _HID_DATA
 typedef struct _HID_DEVICE
 {
     PCHAR                DevicePath;
-    HANDLE               HidDevice; // A file handle to the hid device.
+    HANDLE               HidDevice;         // A file handle to the hid device.
     bool                 OpenedForRead;
     bool                 OpenedForWrite;
     bool                 OpenedOverlapped;
