@@ -41,6 +41,8 @@ After determining the correct VID/PID for your device, you can change them by us
 
 `.\Alien-Macros.exe --vid 0x0d62 --pid 0x1a1c`
 
+Be sure that the VID/PID are in the form 0xXXXX where XXXX is the hexadecimal VID/PID. Otherwise, the program will not accept the input.
+
 # TODO
 
 - [ ] Determine other VID/PIDs that are used in other systems. Will require users to report what they encounter in their own systems. Please report by commenting on [Issue #1](https://github.com/mscreations/Alien-Macros/issues/1)
