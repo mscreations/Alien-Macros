@@ -25,7 +25,7 @@
 #include "Alien-Macros.h"
 #include "argparse.h"
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     argparse::Parser parser;
 

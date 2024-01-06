@@ -34,11 +34,11 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
     static HID_DEVICE               targetDevice;
 
     PHID_DEVICE                     pDevice;
-    PHID_DEVICE                     tempDeviceList = NULL;
+    PHID_DEVICE                     tempDeviceList = nullptr;
     ULONG                           numberDevices;
     DWORD                           threadID;
 
-    readThread = NULL;
+    readThread = nullptr;
 
     if (!FindKnownHidDevices(&tempDeviceList, &numberDevices))
     {
@@ -47,7 +47,7 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
     }
 
     pDevice = tempDeviceList;
-    for (int iIndex = 0; (ULONG) iIndex < numberDevices; iIndex++)
+    for (int iIndex = 0; (ULONG)iIndex < numberDevices; iIndex++)
     {
         if (pDevice->Attributes.VendorID == targetVID &&
             pDevice->Attributes.ProductID == targetPID &&
@@ -63,9 +63,9 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
         }
     }
     free(tempDeviceList);
-    tempDeviceList = NULL;
+    tempDeviceList = nullptr;
 
-    if (NULL == targetDevice.DevicePath)
+    if (targetDevice.DevicePath == nullptr)
     {
         std::cerr << "Target device could not be located!" << std::endl;
         return -1;
@@ -86,7 +86,7 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
 
     std::cout << "Starting monitor" << std::endl;
 
-    readThread = CreateThread(NULL,
+    readThread = CreateThread(nullptr,
                               0,
                               ReadThreadProc,
                               &readContext,
@@ -105,12 +105,12 @@ DWORD WINAPI ReadThreadProc(LPVOID lParam)
     DWORD                   waitStatus;
     OVERLAPPED              overlap;
     DWORD                   bytesTransferred;
-    PREAD_THREAD_CONTEXT    Context = (PREAD_THREAD_CONTEXT) lParam;
+    PREAD_THREAD_CONTEXT    Context = static_cast<PREAD_THREAD_CONTEXT>(lParam);
     PHID_DEVICE             pDevice = Context->HidDevice;
 
-    completionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+    completionEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-    if (NULL == completionEvent)
+    if (completionEvent == nullptr)
     {
         ExitThread(0);
         return 0;
@@ -161,7 +161,7 @@ DWORD WINAPI ReadThreadProc(LPVOID lParam)
 
 void HandleMacroKey(USAGE macroKey)
 {
-    std::cout << "Read key: 0x" << std::hex << macroKey << " Macro " << (char) (macroKey - 0xb) << std::endl;
+    std::cout << "Read key: 0x" << std::hex << macroKey << " Macro " << (char)(macroKey - 0xb) << std::endl;
 
     INPUT inputs[2] = {};
     ZeroMemory(inputs, sizeof(inputs));
