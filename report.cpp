@@ -22,9 +22,7 @@ Environment:
 #include "hidsdi.h"
 #include "hid.h"
 
-
-BOOLEAN
-Read(
+bool Read(
     PHID_DEVICE    HidDevice
 )
 /*++
@@ -41,13 +39,13 @@ RoutineDescription:
                   &bytesRead,
                   NULL))
     {
-        return FALSE;
+        return false;
     }
 
     ASSERT(bytesRead == HidDevice->Caps.InputReportByteLength);
     if (bytesRead != HidDevice->Caps.InputReportByteLength)
     {
-        return FALSE;
+        return false;
     }
 
     return UnpackReport(HidDevice->InputReportBuffer,
@@ -58,8 +56,7 @@ RoutineDescription:
                         HidDevice->Ppd);
 }
 
-BOOLEAN
-ReadOverlapped(
+bool ReadOverlapped(
     PHID_DEVICE     HidDevice,
     HANDLE          CompletionEvent,
     LPOVERLAPPED    Overlap
@@ -71,7 +68,7 @@ RoutineDescription:
 --*/
 {
     DWORD       bytesRead;
-    BOOL        readStatus;
+    bool        readStatus;
 
     /*
     // Setup the overlap structure using the completion event passed in to
@@ -94,23 +91,23 @@ RoutineDescription:
                           Overlap);
 
     /*
-    // If the readStatus is FALSE, then one of two cases occurred.
+    // If the readStatus is false, then one of two cases occurred.
     //  1) ReadFile call succeeded but the Read is an overlapped one.  Here,
-    //      we should return TRUE to indicate that the Read succeeded.  However,
+    //      we should return true to indicate that the Read succeeded.  However,
     //      the calling thread should be blocked on the completion event
     //      which means it won't continue until the read actually completes
     //
     //  2) The ReadFile call failed for some unknown reason...In this case,
-    //      the return code will be FALSE
+    //      the return code will be false
     */
 
     if (!readStatus)
     {
-        return (ERROR_IO_PENDING == GetLastError());
+        return (GetLastError() == ERROR_IO_PENDING);
     }
 
     /*
-    // If readStatus is TRUE, then the ReadFile call completed synchronously,
+    // If readStatus is true, then the ReadFile call completed synchronously,
     //   since the calling thread is probably going to wait on the completion
     //   event, signal the event so it knows it can continue.
     */
@@ -118,12 +115,11 @@ RoutineDescription:
     else
     {
         SetEvent(CompletionEvent);
-        return (TRUE);
+        return (true);
     }
 }
 
-BOOLEAN
-Write(
+bool Write(
     PHID_DEVICE    HidDevice
 )
 /*++
@@ -132,15 +128,15 @@ RoutineDescription:
    pack it into multiple write reports and send each report to the HID device
 --*/
 {
-    DWORD     bytesWritten;
-    PHID_DATA pData;
-    ULONG     Index;
-    bool   Status;
-    bool   WriteStatus;
+    DWORD       bytesWritten;
+    PHID_DATA   pData;
+    ULONG       Index;
+    bool        Status;
+    bool        WriteStatus;
 
     /*
     // Begin by looping through the HID_DEVICE's HID_DATA structure and setting
-    //   the IsDataSet field to FALSE to indicate that each structure has
+    //   the IsDataSet field to false to indicate that each structure has
     //   not yet been set for this Write call.
     */
 
@@ -148,7 +144,7 @@ RoutineDescription:
 
     for (Index = 0; Index < HidDevice->OutputDataLength; Index++, pData++)
     {
-        pData->IsDataSet = FALSE;
+        pData->IsDataSet = false;
     }
 
     /*
@@ -158,7 +154,7 @@ RoutineDescription:
     //   determine if a given report field has already been set.
     */
 
-    Status = TRUE;
+    Status = true;
 
     pData = HidDevice->OutputData;
     for (Index = 0; Index < HidDevice->OutputDataLength; Index++, pData++)
@@ -195,8 +191,7 @@ RoutineDescription:
     return (Status);
 }
 
-BOOLEAN
-SetFeature(
+bool SetFeature(
     PHID_DEVICE    HidDevice
 )
 /*++
@@ -205,13 +200,13 @@ Given a struct _HID_DEVICE, take the information in the HID_DATA array
 pack it into multiple reports and send it to the hid device via HidD_SetFeature()
 --*/
 {
-    PHID_DATA pData;
-    ULONG     Index;
-    bool   Status;
-    bool   FeatureStatus;
+    PHID_DATA   pData;
+    ULONG       Index;
+    bool        Status;
+    bool        FeatureStatus;
     /*
     // Begin by looping through the HID_DEVICE's HID_DATA structure and setting
-    //   the IsDataSet field to FALSE to indicate that each structure has
+    //   the IsDataSet field to false to indicate that each structure has
     //   not yet been set for this SetFeature() call.
     */
 
@@ -219,7 +214,7 @@ pack it into multiple reports and send it to the hid device via HidD_SetFeature(
 
     for (Index = 0; Index < HidDevice->FeatureDataLength; Index++, pData++)
     {
-        pData->IsDataSet = FALSE;
+        pData->IsDataSet = false;
     }
 
     /*
@@ -229,7 +224,7 @@ pack it into multiple reports and send it to the hid device via HidD_SetFeature(
     //   determine if a given report field has already been set.
     */
 
-    Status = TRUE;
+    Status = true;
 
     pData = HidDevice->FeatureData;
     for (Index = 0; Index < HidDevice->FeatureDataLength; Index++, pData++)
@@ -263,8 +258,7 @@ pack it into multiple reports and send it to the hid device via HidD_SetFeature(
     return (Status);
 }
 
-BOOLEAN
-GetFeature(
+bool GetFeature(
     PHID_DEVICE    HidDevice
 )
 /*++
@@ -274,21 +268,21 @@ RoutineDescription:
    deal with multiple report IDs.
 --*/
 {
-    ULONG     Index;
-    PHID_DATA pData;
-    bool   FeatureStatus;
-    bool   Status;
+    ULONG       Index;
+    PHID_DATA   pData;
+    bool        FeatureStatus;
+    bool        Status;
 
     /*
     // As with writing data, the IsDataSet value in all the structures should be
-    //    set to FALSE to indicate that the value has yet to have been set
+    //    set to false to indicate that the value has yet to have been set
     */
 
     pData = HidDevice->FeatureData;
 
     for (Index = 0; Index < HidDevice->FeatureDataLength; Index++, pData++)
     {
-        pData->IsDataSet = FALSE;
+        pData->IsDataSet = false;
     }
 
     /*
@@ -297,7 +291,7 @@ RoutineDescription:
     //   number of calls is equal to the number of reportIDs on the device
     */
 
-    Status = TRUE;
+    Status = true;
     pData = HidDevice->FeatureData;
 
     for (Index = 0; Index < HidDevice->FeatureDataLength; Index++, pData++)
@@ -321,7 +315,7 @@ RoutineDescription:
                                             HidDevice->Caps.FeatureReportByteLength);
 
             /*
-            // If the return value is TRUE, scan through the rest of the HID_DATA
+            // If the return value is true, scan through the rest of the HID_DATA
             //    structures and fill whatever values we can from this report
             */
 
@@ -344,9 +338,8 @@ RoutineDescription:
 }
 
 
-BOOLEAN
-UnpackReport(
-    _In_reads_bytes_(ReportBufferLength)PCHAR ReportBuffer,
+bool UnpackReport(
+    _In_reads_bytes_(ReportBufferLength) PCHAR ReportBuffer,
     IN       USHORT               ReportBufferLength,
     IN       HIDP_REPORT_TYPE     ReportType,
     IN OUT   PHID_DATA            Data,
@@ -365,7 +358,6 @@ Routine Description:
     UCHAR       reportID;
     ULONG       Index;
     ULONG       nextUsage;
-    BOOLEAN     result = FALSE;
 
     reportID = ReportBuffer[0];
 
@@ -388,7 +380,7 @@ Routine Description:
 
                 if (HIDP_STATUS_SUCCESS != Data->Status)
                 {
-                    goto Done;
+                    return false;
                 }
 
                 //
@@ -447,7 +439,7 @@ Routine Description:
 
                 if (HIDP_STATUS_SUCCESS != Data->Status)
                 {
-                    goto Done;
+                    return false;
                 }
 
                 Data->Status = HidP_GetScaledUsageValue(ReportType,
@@ -462,24 +454,19 @@ Routine Description:
                 if (HIDP_STATUS_SUCCESS != Data->Status &&
                     HIDP_STATUS_NULL != Data->Status)
                 {
-                    goto Done;
+                    return false;
                 }
 
             }
-            Data->IsDataSet = TRUE;
+            Data->IsDataSet = true;
         }
     }
-
-    result = TRUE;
-
-Done:
-    return (result);
+    return true;
 }
 
 
-BOOLEAN
-PackReport(
-    _Out_writes_bytes_(ReportBufferLength)PCHAR ReportBuffer,
+bool PackReport(
+    _Out_writes_bytes_(ReportBufferLength) PCHAR ReportBuffer,
     IN  USHORT               ReportBufferLength,
     IN  HIDP_REPORT_TYPE     ReportType,
     IN  PHID_DATA            Data,
@@ -494,20 +481,19 @@ Routine Description:
 
    For every data structure in the list that has the same report ID as the first
       item in the list will be set in the report.  Every data item that is
-      set will also have it's IsDataSet field marked with TRUE.
+      set will also have it's IsDataSet field marked with true.
 
-   A return value of FALSE indicates an unexpected error occurred when setting
+   A return value of false indicates an unexpected error occurred when setting
       a given data value.  The caller should expect that assume that no values
       within the given data structure were set.
 
-   A return value of TRUE indicates that all data values for the given report
+   A return value of true indicates that all data values for the given report
       ID were set without error.
 --*/
 {
     ULONG       numUsages; // Number of usages to set for a given report.
     ULONG       i;
     ULONG       CurrReportID;
-    BOOLEAN     result = FALSE;
     PHID_DATA   Head = Data;
     /*
     // All report buffers that are initially sent need to be zero'd out
@@ -567,7 +553,7 @@ Routine Description:
 
             if (HIDP_STATUS_SUCCESS != Data->Status)
             {
-                goto Done;
+                return false;
             }
         }
     }
@@ -584,13 +570,9 @@ Routine Description:
     {
         if (CurrReportID == Data->ReportID)
         {
-            Data->IsDataSet = TRUE;
+            Data->IsDataSet = true;
         }
     }
-
-    result = TRUE;
-
-Done:
-    return result;
+    return true;
 }
 

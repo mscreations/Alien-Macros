@@ -30,10 +30,9 @@ Environment:
 
 #pragma warning(disable:28146) // Warning is meant for kernel mode drivers 
 
-BOOLEAN
-FindKnownHidDevices(
-    OUT PHID_DEVICE* HidDevices, // A array of struct _HID_DEVICE
-    OUT PULONG        NumberDevices // the length of this array.
+bool FindKnownHidDevices(
+    OUT PHID_DEVICE*    HidDevices,     // A array of struct _HID_DEVICE
+    OUT PULONG          NumberDevices   // the length of this array.
 )
 /*++
 Routine Description:
@@ -43,13 +42,13 @@ Routine Description:
 {
     HDEVINFO                            hardwareDeviceInfo = INVALID_HANDLE_VALUE;
     SP_DEVICE_INTERFACE_DATA            deviceInfoData{};
-    ULONG                               i;
-    BOOLEAN                             done = FALSE;
-    PHID_DEVICE                         hidDeviceInst;
+    ULONG                               i = 0;
+    bool                                done = false;
+    PHID_DEVICE                         hidDeviceInst = nullptr;
     GUID                                hidGuid;
     PSP_DEVICE_INTERFACE_DETAIL_DATA_A  functionClassDeviceData = nullptr;
     ULONG                               requiredLength = 0;
-    PHID_DEVICE                         newHidDevices;
+    PHID_DEVICE                         newHidDevices = nullptr;
 
 
     HidD_GetHidGuid(&hidGuid);
@@ -66,9 +65,9 @@ Routine Description:
                                               (DIGCF_PRESENT | // Only Devices present
                                                DIGCF_DEVICEINTERFACE)); // Function class devices.
 
-    if (INVALID_HANDLE_VALUE == hardwareDeviceInfo)
+    if (hardwareDeviceInfo == INVALID_HANDLE_VALUE)
     {
-        goto Done;
+        return false;
     }
 
     //
@@ -76,10 +75,9 @@ Routine Description:
     //
 
     *NumberDevices = 4;
-    done = FALSE;
+
     deviceInfoData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 
-    i = 0;
     while (!done)
     {
         *NumberDevices *= 2;
@@ -91,6 +89,7 @@ Routine Description:
             if (newHidDevices == nullptr)
             {
                 free(*HidDevices);
+                return false;
             }
 
             *HidDevices = newHidDevices;
@@ -102,7 +101,13 @@ Routine Description:
 
         if (*HidDevices == nullptr)
         {
-            goto Done;
+            if (newHidDevices != nullptr)
+            {
+                free(newHidDevices);
+                newHidDevices = nullptr;
+                hidDeviceInst = nullptr;
+            }
+            return false;
         }
 
         hidDeviceInst = *HidDevices + i;
@@ -144,7 +149,12 @@ Routine Description:
                 }
                 else
                 {
-                    goto Done;
+                    if (*HidDevices != nullptr) 
+                    {
+                        free(*HidDevices);
+                        *HidDevices = nullptr;
+                    }
+                    return false;
                 }
 
                 //
@@ -164,20 +174,20 @@ Routine Description:
                     //
 
                     if (!OpenHidDevice(functionClassDeviceData->DevicePath,
-                                       FALSE,      // ReadAccess - none
-                                       FALSE,      // WriteAccess - none
-                                       FALSE,       // Overlapped - no
-                                       FALSE,       // Exclusive - no
+                                       false,      // ReadAccess - none
+                                       false,      // WriteAccess - none
+                                       false,       // Overlapped - no
+                                       false,       // Exclusive - no
                                        hidDeviceInst))
                     {
                         //
                         // Save the device path so it can be still listed.
                         //
-                        INT     iDevicePathSize;
+                        int     iDevicePathSize;
 
-                        iDevicePathSize = static_cast<INT>(strnlen(functionClassDeviceData->DevicePath, MAX_PATH) + 1);
+                        iDevicePathSize = static_cast<int>(strnlen(functionClassDeviceData->DevicePath, MAX_PATH) + 1);
 
-                        hidDeviceInst->DevicePath = static_cast<PCHAR>(malloc(iDevicePathSize));
+                        hidDeviceInst->DevicePath = new char[iDevicePathSize];
 
                         if (hidDeviceInst->DevicePath != nullptr)
                         {
@@ -185,7 +195,7 @@ Routine Description:
                         }
                         else
                         {
-                            goto Done;
+                            return false;
                         }
                     }
                 }
@@ -195,9 +205,9 @@ Routine Description:
             }
             else
             {
-                if (ERROR_NO_MORE_ITEMS == GetLastError())
+                if (GetLastError() == ERROR_NO_MORE_ITEMS)
                 {
-                    done = TRUE;
+                    done = true;
                     break;
                 }
             }
@@ -206,17 +216,7 @@ Routine Description:
 
     *NumberDevices = i;
 
-Done:
-    if (FALSE == done)
-    {
-        if (*HidDevices != nullptr)
-        {
-            free(*HidDevices);
-            *HidDevices = nullptr;
-        }
-    }
-
-    if (INVALID_HANDLE_VALUE != hardwareDeviceInfo)
+    if (hardwareDeviceInfo != INVALID_HANDLE_VALUE)
     {
         SetupDiDestroyDeviceInfoList(hardwareDeviceInfo);
         hardwareDeviceInfo = INVALID_HANDLE_VALUE;
@@ -225,13 +225,12 @@ Done:
     return done;
 }
 
-BOOLEAN
-OpenHidDevice(
+bool OpenHidDevice(
     _In_     LPSTR          DevicePath,
-    _In_     BOOL           HasReadAccess,
-    _In_     BOOL           HasWriteAccess,
-    _In_     BOOL           IsOverlapped,
-    _In_     BOOL           IsExclusive,
+    _In_     bool           HasReadAccess,
+    _In_     bool           HasWriteAccess,
+    _In_     bool           IsOverlapped,
+    _In_     bool           IsExclusive,
     _Out_    PHID_DEVICE    HidDevice
 )
 /*++
@@ -247,24 +246,23 @@ RoutineDescription:
 {
     DWORD   accessFlags = 0;
     DWORD   sharingFlags = 0;
-    BOOLEAN bRet = FALSE;
-    INT     iDevicePathSize;
+    int     iDevicePathSize;
 
     RtlZeroMemory(HidDevice, sizeof(HID_DEVICE));
     HidDevice->HidDevice = INVALID_HANDLE_VALUE;
 
     if (DevicePath == nullptr)
     {
-        goto Done;
+        return false;
     }
 
-    iDevicePathSize = static_cast<INT>(strnlen(DevicePath, MAX_PATH) + 1);
+    iDevicePathSize = static_cast<int>(strnlen(DevicePath, MAX_PATH) + 1);
 
     HidDevice->DevicePath = static_cast<PCHAR>(malloc(iDevicePathSize));
 
     if (HidDevice->DevicePath == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     StringCbCopyA(HidDevice->DevicePath, iDevicePathSize, DevicePath);
@@ -299,9 +297,10 @@ RoutineDescription:
                                        0,   // Open device as non-overlapped so we can get data
                                        nullptr);       // No template file
 
-    if (INVALID_HANDLE_VALUE == HidDevice->HidDevice)
+    if (HidDevice->HidDevice == INVALID_HANDLE_VALUE)
     {
-        goto Done;
+        CloseHidDevice(HidDevice);
+        return false;
     }
 
     HidDevice->OpenedForRead = HasReadAccess;
@@ -316,38 +315,13 @@ RoutineDescription:
     //  functions does synchronous I/O.
     //
 
-    if (!HidD_GetPreparsedData(HidDevice->HidDevice, &HidDevice->Ppd))
+    if (!HidD_GetPreparsedData(HidDevice->HidDevice, &HidDevice->Ppd) ||
+        !HidD_GetAttributes(HidDevice->HidDevice, &HidDevice->Attributes) ||
+        !HidP_GetCaps(HidDevice->Ppd, &HidDevice->Caps) || 
+        !FillDeviceInfo(HidDevice))
     {
-        goto Done;
-    }
-
-    if (!HidD_GetAttributes(HidDevice->HidDevice, &HidDevice->Attributes))
-    {
-        goto Done;
-    }
-
-    if (!HidP_GetCaps(HidDevice->Ppd, &HidDevice->Caps))
-    {
-        goto Done;
-    }
-
-    //
-    // At this point the client has a choice.  It may chose to look at the
-    // Usage and Page of the top level collection found in the HIDP_CAPS
-    // structure.  In this way it could just use the usages it knows about.
-    // If either HidP_GetUsages or HidP_GetUsageValue return an error then
-    // that particular usage does not exist in the report.
-    // This is most likely the preferred method as the application can only
-    // use usages of which it already knows.
-    // In this case the app need not even call GetButtonCaps or GetValueCaps.
-    //
-    // In this example, however, we will call FillDeviceInfo to look for all
-    //    of the usages in the device.
-    //
-
-    if (!FillDeviceInfo(HidDevice))
-    {
-        goto Done;
+        CloseHidDevice(HidDevice);
+        return false;
     }
 
     if (IsOverlapped)
@@ -363,25 +337,17 @@ RoutineDescription:
                                            FILE_FLAG_OVERLAPPED, // Now we open the device as overlapped
                                            nullptr);       // No template file
 
-        if (INVALID_HANDLE_VALUE == HidDevice->HidDevice)
+        if (HidDevice->HidDevice == INVALID_HANDLE_VALUE)
         {
-            goto Done;
+            CloseHidDevice(HidDevice);
+            return false;
         }
     }
 
-    bRet = TRUE;
-
-Done:
-    if (!bRet)
-    {
-        CloseHidDevice(HidDevice);
-    }
-
-    return (bRet);
+    return true;
 }
 
-BOOLEAN
-FillDeviceInfo(
+bool FillDeviceInfo(
     IN  PHID_DEVICE HidDevice
 )
 {
@@ -395,7 +361,6 @@ FillDeviceInfo(
     UINT                dataIdx;
     ULONG               newFeatureDataLength;
     ULONG               tmpSum;
-    BOOLEAN             bRet = FALSE;
 
     //
     // setup Input Data buffers.
@@ -417,14 +382,14 @@ FillDeviceInfo(
 
     if (buttonCaps == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     HidDevice->InputValueCaps = valueCaps = static_cast<PHIDP_VALUE_CAPS>(calloc(HidDevice->Caps.NumberInputValueCaps, sizeof(HIDP_VALUE_CAPS)));
 
     if (valueCaps == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     //
@@ -440,7 +405,7 @@ FillDeviceInfo(
                                                        &numCaps,
                                                        HidDevice->Ppd)))
         {
-            goto Done;
+            return false;
         }
     }
 
@@ -453,7 +418,7 @@ FillDeviceInfo(
                                                       &numCaps,
                                                       HidDevice->Ppd)))
         {
-            goto Done;
+            return false;
         }
     }
 
@@ -478,7 +443,7 @@ FillDeviceInfo(
             numValues += valueCaps->Range.UsageMax - valueCaps->Range.UsageMin + 1;
             if (valueCaps->Range.UsageMin > valueCaps->Range.UsageMax)
             {
-                goto Done;  // overrun check
+                return false;
             }
         }
         else
@@ -502,7 +467,7 @@ FillDeviceInfo(
 
     if (data == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     //
@@ -513,7 +478,7 @@ FillDeviceInfo(
          i < HidDevice->Caps.NumberInputButtonCaps;
          i++, data++, buttonCaps++, dataIdx++)
     {
-        data->IsButtonData = TRUE;
+        data->IsButtonData = true;
         data->Status = HIDP_STATUS_SUCCESS;
         data->UsagePage = buttonCaps->UsagePage;
         if (buttonCaps->IsRange)
@@ -549,9 +514,9 @@ FillDeviceInfo(
             {
                 if (dataIdx >= (HidDevice->InputDataLength))
                 {
-                    goto Done; // error case
+                    return false;
                 }
-                data->IsButtonData = FALSE;
+                data->IsButtonData = false;
                 data->Status = HIDP_STATUS_SUCCESS;
                 data->UsagePage = valueCaps->UsagePage;
                 data->ValueData.Usage = usage;
@@ -564,9 +529,9 @@ FillDeviceInfo(
         {
             if (dataIdx >= (HidDevice->InputDataLength))
             {
-                goto Done; // error case
+                return false;
             }
-            data->IsButtonData = FALSE;
+            data->IsButtonData = false;
             data->Status = HIDP_STATUS_SUCCESS;
             data->UsagePage = valueCaps->UsagePage;
             data->ValueData.Usage = valueCaps->NotRange.Usage;
@@ -586,14 +551,14 @@ FillDeviceInfo(
 
     if (buttonCaps == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     HidDevice->OutputValueCaps = valueCaps = static_cast<PHIDP_VALUE_CAPS>(calloc(HidDevice->Caps.NumberOutputValueCaps, sizeof(HIDP_VALUE_CAPS)));
 
     if (valueCaps == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     numCaps = HidDevice->Caps.NumberOutputButtonCaps;
@@ -604,7 +569,7 @@ FillDeviceInfo(
                                                        &numCaps,
                                                        HidDevice->Ppd)))
         {
-            goto Done;
+            return false;
         }
     }
 
@@ -616,7 +581,7 @@ FillDeviceInfo(
                                                       &numCaps,
                                                       HidDevice->Ppd)))
         {
-            goto Done;
+            return false;
         }
     }
 
@@ -642,7 +607,7 @@ FillDeviceInfo(
 
     if (data == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     for (i = 0;
@@ -651,21 +616,21 @@ FillDeviceInfo(
     {
         if (i >= HidDevice->OutputDataLength)
         {
-            goto Done;
+            return false;
         }
 
         if (FAILED(ULongAdd((HidDevice->Caps).NumberOutputButtonCaps,
                             (valueCaps->Range).UsageMax, &tmpSum)))
         {
-            goto Done;
+            return false;
         }
 
         if ((valueCaps->Range).UsageMin == tmpSum)
         {
-            goto Done;
+            return false;
         }
 
-        data->IsButtonData = TRUE;
+        data->IsButtonData = true;
         data->Status = HIDP_STATUS_SUCCESS;
         data->UsagePage = buttonCaps->UsagePage;
 
@@ -697,7 +662,7 @@ FillDeviceInfo(
                  usage <= valueCaps->Range.UsageMax;
                  usage++)
             {
-                data->IsButtonData = FALSE;
+                data->IsButtonData = false;
                 data->Status = HIDP_STATUS_SUCCESS;
                 data->UsagePage = valueCaps->UsagePage;
                 data->ValueData.Usage = usage;
@@ -707,7 +672,7 @@ FillDeviceInfo(
         }
         else
         {
-            data->IsButtonData = FALSE;
+            data->IsButtonData = false;
             data->Status = HIDP_STATUS_SUCCESS;
             data->UsagePage = valueCaps->UsagePage;
             data->ValueData.Usage = valueCaps->NotRange.Usage;
@@ -726,7 +691,7 @@ FillDeviceInfo(
 
     if (buttonCaps == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     HidDevice->FeatureValueCaps = valueCaps = (PHIDP_VALUE_CAPS)
@@ -734,7 +699,7 @@ FillDeviceInfo(
 
     if (valueCaps == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     numCaps = HidDevice->Caps.NumberFeatureButtonCaps;
@@ -745,7 +710,7 @@ FillDeviceInfo(
                                                        &numCaps,
                                                        HidDevice->Ppd)))
         {
-            goto Done;
+            return false;
         }
     }
 
@@ -757,7 +722,7 @@ FillDeviceInfo(
                                                       &numCaps,
                                                       HidDevice->Ppd)))
         {
-            goto Done;
+            return false;
         }
     }
 
@@ -779,7 +744,7 @@ FillDeviceInfo(
     if (FAILED(ULongAdd(HidDevice->Caps.NumberFeatureButtonCaps,
                         numValues, &newFeatureDataLength)))
     {
-        goto Done;
+        return false;
     }
 
     HidDevice->FeatureDataLength = newFeatureDataLength;
@@ -788,7 +753,7 @@ FillDeviceInfo(
 
     if (data == nullptr)
     {
-        goto Done;
+        return false;
     }
 
     dataIdx = 0;
@@ -796,7 +761,7 @@ FillDeviceInfo(
          i < HidDevice->Caps.NumberFeatureButtonCaps;
          i++, data++, buttonCaps++, dataIdx++)
     {
-        data->IsButtonData = TRUE;
+        data->IsButtonData = true;
         data->Status = HIDP_STATUS_SUCCESS;
         data->UsagePage = buttonCaps->UsagePage;
 
@@ -829,9 +794,9 @@ FillDeviceInfo(
             {
                 if (dataIdx >= (HidDevice->FeatureDataLength))
                 {
-                    goto Done; // error case
+                    return false;
                 }
-                data->IsButtonData = FALSE;
+                data->IsButtonData = false;
                 data->Status = HIDP_STATUS_SUCCESS;
                 data->UsagePage = valueCaps->UsagePage;
                 data->ValueData.Usage = usage;
@@ -844,9 +809,9 @@ FillDeviceInfo(
         {
             if (dataIdx >= (HidDevice->FeatureDataLength))
             {
-                goto Done; // error case
+                return false;
             }
-            data->IsButtonData = FALSE;
+            data->IsButtonData = false;
             data->Status = HIDP_STATUS_SUCCESS;
             data->UsagePage = valueCaps->UsagePage;
             data->ValueData.Usage = valueCaps->NotRange.Usage;
@@ -855,25 +820,16 @@ FillDeviceInfo(
             dataIdx++;
         }
     }
-
-    bRet = TRUE;
-
-Done:
-    //
-    // We leave the resource clean-up to the caller. 
-    //
-    return (bRet);
+    
+    return true;
 }
 
-VOID
-CloseHidDevices(
+void CloseHidDevices(
     IN  PHID_DEVICE HidDevices,
     IN  ULONG       NumberDevices
 )
 {
-    ULONG   Index;
-
-    for (Index = 0; Index < NumberDevices; Index++)
+    for (unsigned int Index = 0; Index < NumberDevices; Index++)
     {
         CloseHidDevice(HidDevices + Index);
     }
@@ -881,8 +837,7 @@ CloseHidDevices(
     return;
 }
 
-VOID
-CloseHidDevice(
+void CloseHidDevice(
     IN PHID_DEVICE HidDevice
 )
 {

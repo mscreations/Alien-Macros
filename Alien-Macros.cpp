@@ -29,8 +29,8 @@ int main(int argc, char* argv[])
 {
     argparse::Parser parser;
 
-    auto vid = parser.AddArg<std::string>("vid", 'v', "Target VID").Default(AW_KB_VID);
-    auto pid = parser.AddArg<std::string>("pid", 'p', "Target PID").Default(AW_KB_PID);
+    auto& vid = parser.AddArg<std::string>("vid", 'v', "Target VID").Default(AW_KB_VID);
+    auto& pid = parser.AddArg<std::string>("pid", 'p', "Target PID").Default(AW_KB_PID);
     parser.ParseArgs(argc, argv);
 
     std::regex re("(?:0x)[0-9a-fA-F]{4}");

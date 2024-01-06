@@ -29,35 +29,32 @@
 
 DWORD StartMonitor(WORD targetVID, WORD targetPID)
 {
-    static READ_THREAD_CONTEXT      readContext;
-    static HANDLE                   readThread;
     static HID_DEVICE               targetDevice;
-
+    HANDLE                          completionEvent;
+    bool                            readResult;
+    DWORD                           waitStatus;
+    OVERLAPPED                      overlap;
+    DWORD                           bytesTransferred;
     PCHAR                           targetDevicePath = nullptr;
     PHID_DEVICE                     pDevice = nullptr;
-    PHID_DEVICE                     tempDeviceList = nullptr;
     ULONG                           numberDevices;
-    DWORD                           threadID;
 
-    readThread = nullptr;
-
-    if (!FindKnownHidDevices(&tempDeviceList, &numberDevices))
+    if (!FindKnownHidDevices(&pDevice, &numberDevices))
     {
         std::cerr << "No HID devices found." << std::endl;
         return -1;
     }
 
-    pDevice = tempDeviceList;
-    for (int iIndex = 0; (ULONG)iIndex < numberDevices; iIndex++)
+    for (ULONG iIndex = 0; iIndex < numberDevices; iIndex++, pDevice++)
     {
         if (pDevice->Attributes.VendorID == targetVID &&
             pDevice->Attributes.ProductID == targetPID &&
             pDevice->Caps.UsagePage == AW_USAGEPAGE &&
             pDevice->Caps.Usage == AW_USAGE)
         {
-            iIndex = numberDevices;             // abort for loop now that we found the device we want.
             int iDevicePathSize = static_cast<int>(strnlen(pDevice->DevicePath, MAX_PATH) + 1);
             targetDevicePath = new char[iDevicePathSize];
+            std::memset(targetDevicePath, 0, iDevicePathSize);
             if (targetDevicePath == nullptr) 
             { 
                 std::cerr << "Unable to allocate memory for device path." << std::endl;
@@ -65,14 +62,10 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
             }
             StringCbCopyA(targetDevicePath, iDevicePathSize, pDevice->DevicePath);
             pDevice -= iIndex;
-        }
-        else
-        {
-            pDevice++;
+            break;
         }
     }
-    free(tempDeviceList);
-    tempDeviceList = nullptr;
+    free(pDevice);
     pDevice = nullptr;
 
     if (targetDevicePath == nullptr)
@@ -83,7 +76,7 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
 
     std::cout << "Target Device located: " << targetDevicePath << std::endl;
 
-    BOOL openForAsync = OpenHidDevice(targetDevicePath, TRUE, FALSE, TRUE, FALSE, &targetDevice);
+    bool openForAsync = OpenHidDevice(targetDevicePath, true, false, true, false, &targetDevice);
 
     delete[] targetDevicePath;
 
@@ -93,81 +86,51 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
         return -1;
     }
 
-    readContext.HidDevice = &targetDevice;
-    readContext.TerminateThread = FALSE;
-
     std::cout << "Starting monitor" << std::endl;
 
-    readThread = CreateThread(nullptr,
-                              0,
-                              ReadThreadProc,
-                              &readContext,
-                              0,
-                              &threadID);
-
-    while (true) {}
-
-    return 0;
-}
-
-DWORD WINAPI ReadThreadProc(LPVOID lParam)
-{
-    HANDLE                  completionEvent;
-    BOOL                    readResult;
-    DWORD                   waitStatus;
-    OVERLAPPED              overlap;
-    DWORD                   bytesTransferred;
-    PREAD_THREAD_CONTEXT    Context = static_cast<PREAD_THREAD_CONTEXT>(lParam);
-    PHID_DEVICE             pDevice = Context->HidDevice;
-
-    completionEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    completionEvent = CreateEvent(nullptr, false, false, nullptr);
 
     if (completionEvent == nullptr)
     {
-        ExitThread(0);
-        return 0;
+        return -1;
     }
 
-    readResult = TRUE;
+    readResult = true;
 
     do
     {
-        readResult = ReadOverlapped(Context->HidDevice, completionEvent, &overlap);
+        readResult = ReadOverlapped(&targetDevice, completionEvent, &overlap);
 
         if (!readResult)
         {
             break;
         }
-        while (!Context->TerminateThread)
+        while (true)
         {
             waitStatus = WaitForSingleObject(completionEvent, READ_THREAD_TIMEOUT);
 
-            if (WAIT_OBJECT_0 == waitStatus)
+            if (waitStatus == WAIT_OBJECT_0)
             {
-                readResult = GetOverlappedResult(Context->HidDevice->HidDevice, &overlap, &bytesTransferred, TRUE);
+                readResult = GetOverlappedResult(targetDevice.HidDevice, &overlap, &bytesTransferred, true);
                 break;
             }
         }
-        if (!Context->TerminateThread)
+        UnpackReport(targetDevice.InputReportBuffer,
+                     targetDevice.Caps.InputReportByteLength,
+                     HidP_Input,
+                     targetDevice.InputData,
+                     targetDevice.InputDataLength,
+                     targetDevice.Ppd);
+
+        //USAGE usage = *pDevice->InputData->ButtonData.Usages;
+        USAGE usage = *targetDevice.InputData->ButtonData.Usages;
+
+        if (usage >= MACROA && usage <= MACROD)
         {
-            UnpackReport(pDevice->InputReportBuffer,
-                         pDevice->Caps.InputReportByteLength,
-                         HidP_Input,
-                         pDevice->InputData,
-                         pDevice->InputDataLength,
-                         pDevice->Ppd);
-
-            USAGE usage = *pDevice->InputData->ButtonData.Usages;
-
-            if (usage >= MACROA && usage <= MACROD)
-            {
-                HandleMacroKey(usage);
-            }
+            HandleMacroKey(usage);
         }
-    } while (readResult &&
-             !Context->TerminateThread);
+    } while (readResult);
 
-    ExitThread(0);
     return 0;
 }
 
