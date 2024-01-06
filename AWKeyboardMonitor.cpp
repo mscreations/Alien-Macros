@@ -22,6 +22,7 @@
  */
 
 #include "Alien-Macros.h"
+#include <strsafe.h>
 
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -30,10 +31,10 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
 {
     static READ_THREAD_CONTEXT      readContext;
     static HANDLE                   readThread;
-    static HID_DEVICE               asyncDevice;
     static HID_DEVICE               targetDevice;
 
-    PHID_DEVICE                     pDevice;
+    PCHAR                           targetDevicePath = nullptr;
+    PHID_DEVICE                     pDevice = nullptr;
     PHID_DEVICE                     tempDeviceList = nullptr;
     ULONG                           numberDevices;
     DWORD                           threadID;
@@ -55,7 +56,15 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
             pDevice->Caps.Usage == AW_USAGE)
         {
             iIndex = numberDevices;             // abort for loop now that we found the device we want.
-            targetDevice = *pDevice;
+            int iDevicePathSize = static_cast<int>(strnlen(pDevice->DevicePath, MAX_PATH) + 1);
+            targetDevicePath = new char[iDevicePathSize];
+            if (targetDevicePath == nullptr) 
+            { 
+                std::cerr << "Unable to allocate memory for device path." << std::endl;
+                return -1; 
+            }
+            StringCbCopyA(targetDevicePath, iDevicePathSize, pDevice->DevicePath);
+            pDevice -= iIndex;
         }
         else
         {
@@ -64,16 +73,19 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
     }
     free(tempDeviceList);
     tempDeviceList = nullptr;
+    pDevice = nullptr;
 
-    if (targetDevice.DevicePath == nullptr)
+    if (targetDevicePath == nullptr)
     {
         std::cerr << "Target device could not be located!" << std::endl;
         return -1;
     }
 
-    std::cout << "Target Device located: " << targetDevice.DevicePath << std::endl;
+    std::cout << "Target Device located: " << targetDevicePath << std::endl;
 
-    BOOL openForAsync = OpenHidDevice(targetDevice.DevicePath, TRUE, FALSE, TRUE, FALSE, &asyncDevice);
+    BOOL openForAsync = OpenHidDevice(targetDevicePath, TRUE, FALSE, TRUE, FALSE, &targetDevice);
+
+    delete[] targetDevicePath;
 
     if (!openForAsync)
     {
@@ -81,7 +93,7 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
         return -1;
     }
 
-    readContext.HidDevice = &asyncDevice;
+    readContext.HidDevice = &targetDevice;
     readContext.TerminateThread = FALSE;
 
     std::cout << "Starting monitor" << std::endl;
