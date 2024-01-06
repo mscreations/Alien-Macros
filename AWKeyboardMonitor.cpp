@@ -122,7 +122,6 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
                      targetDevice.InputDataLength,
                      targetDevice.Ppd);
 
-        //USAGE usage = *pDevice->InputData->ButtonData.Usages;
         USAGE usage = *targetDevice.InputData->ButtonData.Usages;
 
         if (usage >= MACROA && usage <= MACROD)
