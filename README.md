@@ -1,8 +1,11 @@
 # :alien: Alien Macros
 
+<a href="https://github.com/mscreations/Alien-Macros/actions/workflows/msbuild.yml"><img src="https://github.com/mscreations/Alien-Macros/workflows/MSBuild/badge.svg" alt="MSBuild" style="max-width: 100%;"></a>
+<a href="https://github.com/mscreations/Alien-Macros/blob/master/LICENSE"><img src="https://badgen.net/github/license/mscreations/Alien-Macros" alt="License" style="max-width: 100%;"></a>
+
 ## What is it?
 
-This is a program that stays running in the background and listens for specific keypress messages for the macro keys from the builtin Alienware keyboard. When they are detected, it generates a new keypress for F13-F16. This can be used to have AutoHotKey trigger a specific action on those keypresses now.
+This is a program that stays running in the background and istens for specific keypress messages for the macro keys from the builtin Alienware keyboard. When they are detected, it generates a new keypress for F13-F16. This can be used to have AutoHotKey trigger a specific action on those keypresses now.
 
 ## Why is it necessary?
 
