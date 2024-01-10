@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  SOLUTION_FILE_PATH: .
+  BUILD_CONFIGURATION: Release
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1
+
+      #- name: Restore NuGet packages
+      #  working-directory: ${{env.GITHUB_WORKSPACE}}
+      #  run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+
+      - name: Build
+        working-directory: ${{ github.workspace }}
+        run: |
+          $workspace_path="${{ github.workspace }}".Replace('\', '/')
+          echo "WORKSPACE_PATH=$workspace_path" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+
+      # - name: Debug Info
+      #   run: |
+      #     echo "Workspace Contents: $(ls -R ${{ github.workspace }})"
+      #     echo "Binary Path: ${{ env.WORKSPACE_PATH }}/x64/Release/Alien-Macros.exe"
+
+      # - name: Dump GitHub context
+      #   env:
+      #     GITHUB_CONTEXT: ${{ toJson(github) }}
+      #   run: echo "$GITHUB_CONTEXT"
+      # - name: Dump GitHub env
+      #   env:
+      #     GITHUB_ENV: ${{ toJson(env) }}
+      #   run: echo "$GITHUB_ENV"
+      # - name: Dump job context
+      #   env:
+      #     JOB_CONTEXT: ${{ toJson(job) }}
+      #   run: echo "$JOB_CONTEXT"
+      # - name: Dump steps context
+      #   env:
+      #     STEPS_CONTEXT: ${{ toJson(steps) }}
+      #   run: echo "$STEPS_CONTEXT"
+      # - name: Dump runner context
+      #   env:
+      #     RUNNER_CONTEXT: ${{ toJson(runner) }}
+      #   run: echo "$RUNNER_CONTEXT"
+      # - name: Dump strategy context
+      #   env:
+      #     STRATEGY_CONTEXT: ${{ toJson(strategy) }}
+      #   run: echo "$STRATEGY_CONTEXT"
+      # - name: Dump matrix context
+      #   env:
+      #     MATRIX_CONTEXT: ${{ toJson(matrix) }}
+      #   run: echo "$MATRIX_CONTEXT"
+
+      - name: Package binary
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          fail_on_unmatched_files: true
+          files: |
+            ${{ env.WORKSPACE_PATH }}/x64/Release/Alien-Macros.exe
+          generate_release_notes: true
