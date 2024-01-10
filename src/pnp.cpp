@@ -85,10 +85,10 @@ Routine Description:
                 std::memset(newHidDevices, 0, *NumberDevices * sizeof(HID_DEVICE));
 
                 // Copy existing data to the new block
-                std::copy(*HidDevices, *HidDevices + *NumberDevices, newHidDevices);
+                std::copy(*HidDevices, (*HidDevices + i), newHidDevices);
 
                 // Deallocate old block
-                delete[] * HidDevices;
+                delete[] *HidDevices;
 
                 *HidDevices = newHidDevices;
             }
@@ -116,7 +116,7 @@ Routine Description:
             //
             // Initialize an empty HID_DEVICE
             //
-            RtlZeroMemory(hidDeviceInst, sizeof(HID_DEVICE));
+            std::memset(hidDeviceInst, 0, sizeof(HID_DEVICE));
 
             hidDeviceInst->HidDevice = INVALID_HANDLE_VALUE;
 
@@ -248,7 +248,7 @@ RoutineDescription:
     DWORD   sharingFlags = 0;
     int     iDevicePathSize;
 
-    std::memset((HidDevice), 0, (sizeof(HID_DEVICE)));
+    std::memset(HidDevice, 0, sizeof(HID_DEVICE));
     HidDevice->HidDevice = INVALID_HANDLE_VALUE;
 
     if (DevicePath == nullptr)
