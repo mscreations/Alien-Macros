@@ -70,6 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -133,22 +136,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Alien-Macros.cpp" />
-    <ClCompile Include="AWKeyboardMonitor.cpp" />
-    <ClCompile Include="pnp.cpp" />
-    <ClCompile Include="report.cpp" />
-    <ClCompile Include="Utilities.cpp" />
+    <ClCompile Include="src\Alien-Macros.cpp" />
+    <ClCompile Include="src\AWKeyboardMonitor.cpp" />
+    <ClCompile Include="src\pnp.cpp" />
+    <ClCompile Include="src\report.cpp" />
+    <ClCompile Include="src\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Alien-Macros.h" />
-    <ClInclude Include="argparse.h" />
-    <ClInclude Include="AWKeyboardMonitor.h" />
-    <ClInclude Include="hid.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="Utilities.h" />
+    <ResourceCompile Include="resources\Alien-Macros.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Alien-Macros.rc" />
+    <ClInclude Include="include\Alien-Macros.h" />
+    <ClInclude Include="include\argparse.h" />
+    <ClInclude Include="include\AWKeyboardMonitor.h" />
+    <ClInclude Include="include\hid.h" />
+    <ClInclude Include="include\resource.h" />
+    <ClInclude Include="include\Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
