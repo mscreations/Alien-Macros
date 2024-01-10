@@ -19,16 +19,13 @@ Environment:
 
 --*/
 
-#include <basetyps.h>
-#include <stdlib.h>
+#include <cstring>
+#include <new>
+#include <algorithm>
 #include <wtypes.h>
-#include <setupapi.h>
-#include "hidsdi.h"
-#include "hid.h"
 #include <strsafe.h>
 #include <intsafe.h>
-
-#pragma warning(disable:28146) // Warning is meant for kernel mode drivers 
+#include "hid.h"
 
 bool FindKnownHidDevices(
     OUT PHID_DEVICE*    HidDevices,     // A array of struct _HID_DEVICE
@@ -49,7 +46,6 @@ Routine Description:
     PSP_DEVICE_INTERFACE_DETAIL_DATA_A  functionClassDeviceData = nullptr;
     ULONG                               requiredLength = 0;
     PHID_DEVICE                         newHidDevices = nullptr;
-
 
     HidD_GetHidGuid(&hidGuid);
 
@@ -81,29 +77,32 @@ Routine Description:
     while (!done)
     {
         *NumberDevices *= 2;
-
-        if (*HidDevices)
+        try
         {
-            newHidDevices = static_cast<PHID_DEVICE>(realloc(*HidDevices, (*NumberDevices * sizeof(HID_DEVICE))));
-
-            if (newHidDevices == nullptr)
+            if (*HidDevices)
             {
-                free(*HidDevices);
-                return false;
+                newHidDevices = new HID_DEVICE[*NumberDevices];
+                std::memset(newHidDevices, 0, *NumberDevices * sizeof(HID_DEVICE));
+
+                // Copy existing data to the new block
+                std::copy(*HidDevices, *HidDevices + *NumberDevices, newHidDevices);
+
+                // Deallocate old block
+                delete[] * HidDevices;
+
+                *HidDevices = newHidDevices;
             }
-
-            *HidDevices = newHidDevices;
+            else
+            {
+                *HidDevices = new HID_DEVICE[*NumberDevices];
+                std::memset(*HidDevices, 0, *NumberDevices * sizeof(HID_DEVICE));
+            }
         }
-        else
-        {
-            *HidDevices = static_cast<PHID_DEVICE>(calloc(*NumberDevices, sizeof(HID_DEVICE)));
-        }
-
-        if (*HidDevices == nullptr)
+        catch (const std::bad_alloc&)
         {
             if (newHidDevices != nullptr)
             {
-                free(newHidDevices);
+                delete[] newHidDevices;
                 newHidDevices = nullptr;
                 hidDeviceInst = nullptr;
             }
@@ -140,22 +139,24 @@ Routine Description:
                     &requiredLength,
                     nullptr); // not interested in the specific dev-node
 
+                try
+                {
+                    functionClassDeviceData = new SP_DEVICE_INTERFACE_DETAIL_DATA_A[requiredLength];
+                    std::memset(functionClassDeviceData, 0, requiredLength * sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A));
 
-                functionClassDeviceData = static_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA_A>(malloc(requiredLength));
-                if (functionClassDeviceData)
-                {
-                    functionClassDeviceData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
-                    ZeroMemory(functionClassDeviceData->DevicePath, sizeof(functionClassDeviceData->DevicePath));
                 }
-                else
+                catch (const std::bad_alloc&)
                 {
-                    if (*HidDevices != nullptr) 
+                    if (*HidDevices != nullptr)
                     {
-                        free(*HidDevices);
+                        delete[] *HidDevices;
                         *HidDevices = nullptr;
                     }
                     return false;
                 }
+
+                functionClassDeviceData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
+                std::memset(functionClassDeviceData->DevicePath, 0, sizeof(functionClassDeviceData->DevicePath));
 
                 //
                 // Retrieve the information from Plug and Play.
@@ -183,24 +184,23 @@ Routine Description:
                         //
                         // Save the device path so it can be still listed.
                         //
-                        int     iDevicePathSize;
+                        int iDevicePathSize = static_cast<int>(strnlen(functionClassDeviceData->DevicePath, MAX_PATH) + 1);
 
-                        iDevicePathSize = static_cast<int>(strnlen(functionClassDeviceData->DevicePath, MAX_PATH) + 1);
-
-                        hidDeviceInst->DevicePath = new char[iDevicePathSize];
-
-                        if (hidDeviceInst->DevicePath != nullptr)
+                        try
                         {
-                            StringCbCopyA(hidDeviceInst->DevicePath, iDevicePathSize, functionClassDeviceData->DevicePath);
+                            hidDeviceInst->DevicePath = new char[iDevicePathSize];
+                            std::memset(hidDeviceInst->DevicePath, 0, iDevicePathSize);
                         }
-                        else
+                        catch (const std::bad_alloc&)
                         {
                             return false;
                         }
+
+                        StringCbCopyA(hidDeviceInst->DevicePath, iDevicePathSize, functionClassDeviceData->DevicePath);
                     }
                 }
 
-                free(functionClassDeviceData);
+                delete[] functionClassDeviceData;
                 functionClassDeviceData = nullptr;
             }
             else
@@ -248,7 +248,7 @@ RoutineDescription:
     DWORD   sharingFlags = 0;
     int     iDevicePathSize;
 
-    RtlZeroMemory(HidDevice, sizeof(HID_DEVICE));
+    std::memset((HidDevice), 0, (sizeof(HID_DEVICE)));
     HidDevice->HidDevice = INVALID_HANDLE_VALUE;
 
     if (DevicePath == nullptr)
@@ -258,9 +258,12 @@ RoutineDescription:
 
     iDevicePathSize = static_cast<int>(strnlen(DevicePath, MAX_PATH) + 1);
 
-    HidDevice->DevicePath = static_cast<PCHAR>(malloc(iDevicePathSize));
-
-    if (HidDevice->DevicePath == nullptr)
+    try
+    {
+        HidDevice->DevicePath = new char[iDevicePathSize];
+        std::memset(HidDevice->DevicePath, 0, iDevicePathSize);
+    }
+    catch (const std::bad_alloc&)
     {
         return false;
     }
@@ -317,7 +320,7 @@ RoutineDescription:
 
     if (!HidD_GetPreparsedData(HidDevice->HidDevice, &HidDevice->Ppd) ||
         !HidD_GetAttributes(HidDevice->HidDevice, &HidDevice->Attributes) ||
-        !HidP_GetCaps(HidDevice->Ppd, &HidDevice->Caps) || 
+        !HidP_GetCaps(HidDevice->Ppd, &HidDevice->Caps) ||
         !FillDeviceInfo(HidDevice))
     {
         CloseHidDevice(HidDevice);
@@ -370,24 +373,22 @@ bool FillDeviceInfo(
     // Allocate memory to hold on input report
     //
 
-    HidDevice->InputReportBuffer = static_cast<PCHAR>(calloc(HidDevice->Caps.InputReportByteLength, sizeof(CHAR)));
-
+    try
+    {
+        HidDevice->InputReportBuffer = new char[HidDevice->Caps.InputReportByteLength];
+        std::memset(HidDevice->InputReportBuffer, 0, HidDevice->Caps.InputReportByteLength);
 
     //
     // Allocate memory to hold the button and value capabilities.
     // NumberXXCaps is in terms of array elements.
     //
+        HidDevice->InputButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberInputButtonCaps];
+        std::memset(HidDevice->InputButtonCaps, 0, HidDevice->Caps.NumberInputButtonCaps * sizeof(HIDP_BUTTON_CAPS));
 
-    HidDevice->InputButtonCaps = buttonCaps = static_cast<PHIDP_BUTTON_CAPS>(calloc(HidDevice->Caps.NumberInputButtonCaps, sizeof(HIDP_BUTTON_CAPS)));
-
-    if (buttonCaps == nullptr)
-    {
-        return false;
+        HidDevice->InputValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberInputValueCaps];
+        std::memset(HidDevice->InputValueCaps, 0, HidDevice->Caps.NumberInputValueCaps * sizeof(HIDP_VALUE_CAPS));
     }
-
-    HidDevice->InputValueCaps = valueCaps = static_cast<PHIDP_VALUE_CAPS>(calloc(HidDevice->Caps.NumberInputValueCaps, sizeof(HIDP_VALUE_CAPS)));
-
-    if (valueCaps == nullptr)
+    catch (const std::bad_alloc&)
     {
         return false;
     }
@@ -463,9 +464,12 @@ bool FillDeviceInfo(
     HidDevice->InputDataLength = HidDevice->Caps.NumberInputButtonCaps
         + numValues;
 
-    HidDevice->InputData = data = static_cast<PHID_DATA>(calloc(HidDevice->InputDataLength, sizeof(HID_DATA)));
-
-    if (data == nullptr)
+    try
+    {
+        HidDevice->InputData = data = new HID_DATA[HidDevice->InputDataLength];
+        std::memset(HidDevice->InputData, 0, HidDevice->InputDataLength * sizeof(HID_DATA));
+    }
+    catch (const std::bad_alloc&)
     {
         return false;
     }
@@ -495,7 +499,16 @@ bool FillDeviceInfo(
             HidP_Input,
             buttonCaps->UsagePage,
             HidDevice->Ppd);
-        data->ButtonData.Usages = static_cast<PUSAGE>(calloc(data->ButtonData.MaxUsageLength, sizeof(USAGE)));
+
+        try
+        {
+            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength];
+            std::memset(data->ButtonData.Usages, 0, data->ButtonData.MaxUsageLength * sizeof(USAGE));
+        }
+        catch (const std::bad_alloc&)
+        {
+            return false;
+        }
 
         data->ReportID = buttonCaps->ReportID;
     }
@@ -545,18 +558,18 @@ bool FillDeviceInfo(
     // setup Output Data buffers.
     //
 
-    HidDevice->OutputReportBuffer = static_cast<PCHAR>(calloc(HidDevice->Caps.OutputReportByteLength, sizeof(CHAR)));
-
-    HidDevice->OutputButtonCaps = buttonCaps = static_cast<PHIDP_BUTTON_CAPS>(calloc(HidDevice->Caps.NumberOutputButtonCaps, sizeof(HIDP_BUTTON_CAPS)));
-
-    if (buttonCaps == nullptr)
+    try
     {
-        return false;
+        HidDevice->OutputReportBuffer = new char[HidDevice->Caps.OutputReportByteLength];
+        std::memset(HidDevice->OutputReportBuffer, 0, HidDevice->Caps.OutputReportByteLength);
+
+        HidDevice->OutputButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberOutputButtonCaps];
+        std::memset(HidDevice->OutputButtonCaps, 0, HidDevice->Caps.NumberOutputButtonCaps * sizeof(HIDP_BUTTON_CAPS));
+
+        HidDevice->OutputValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberOutputValueCaps];
+        std::memset(HidDevice->OutputValueCaps, 0, HidDevice->Caps.NumberOutputValueCaps * sizeof(HIDP_VALUE_CAPS));
     }
-
-    HidDevice->OutputValueCaps = valueCaps = static_cast<PHIDP_VALUE_CAPS>(calloc(HidDevice->Caps.NumberOutputValueCaps, sizeof(HIDP_VALUE_CAPS)));
-
-    if (valueCaps == nullptr)
+    catch (const std::bad_alloc&)
     {
         return false;
     }
@@ -603,9 +616,12 @@ bool FillDeviceInfo(
     HidDevice->OutputDataLength = HidDevice->Caps.NumberOutputButtonCaps
         + numValues;
 
-    HidDevice->OutputData = data = static_cast<PHID_DATA>(calloc(HidDevice->OutputDataLength, sizeof(HID_DATA)));
-
-    if (data == nullptr)
+    try
+    {
+        HidDevice->OutputData = data = new HID_DATA[HidDevice->OutputDataLength];
+        std::memset(HidDevice->OutputData, 0, HidDevice->OutputDataLength * sizeof(HID_DATA));
+    }
+    catch (const std::bad_alloc&)
     {
         return false;
     }
@@ -649,7 +665,15 @@ bool FillDeviceInfo(
             buttonCaps->UsagePage,
             HidDevice->Ppd);
 
-        data->ButtonData.Usages = static_cast<PUSAGE>(calloc(data->ButtonData.MaxUsageLength, sizeof(USAGE)));
+        try
+        {
+            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength];
+            std::memset(data->ButtonData.Usages, 0, data->ButtonData.MaxUsageLength * sizeof(USAGE));
+        }
+        catch (const std::bad_alloc&)
+        {
+            return false;
+        }
 
         data->ReportID = buttonCaps->ReportID;
     }
@@ -685,19 +709,18 @@ bool FillDeviceInfo(
     // setup Feature Data buffers.
     //
 
-    HidDevice->FeatureReportBuffer = static_cast<PCHAR>(calloc(HidDevice->Caps.FeatureReportByteLength, sizeof(CHAR)));
-
-    HidDevice->FeatureButtonCaps = buttonCaps = static_cast<PHIDP_BUTTON_CAPS>(calloc(HidDevice->Caps.NumberFeatureButtonCaps, sizeof(HIDP_BUTTON_CAPS)));
-
-    if (buttonCaps == nullptr)
+    try
     {
-        return false;
+        HidDevice->FeatureReportBuffer = new char[HidDevice->Caps.FeatureReportByteLength];
+        std::memset(HidDevice->FeatureReportBuffer, 0, HidDevice->Caps.FeatureReportByteLength);
+
+        HidDevice->FeatureButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberFeatureButtonCaps];
+        std::memset(HidDevice->FeatureButtonCaps, 0, HidDevice->Caps.NumberFeatureButtonCaps * sizeof(HIDP_BUTTON_CAPS));
+
+        HidDevice->FeatureValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberFeatureValueCaps];
+        std::memset(HidDevice->FeatureValueCaps, 0, HidDevice->Caps.NumberFeatureValueCaps * sizeof(HIDP_VALUE_CAPS));
     }
-
-    HidDevice->FeatureValueCaps = valueCaps = (PHIDP_VALUE_CAPS)
-        calloc(HidDevice->Caps.NumberFeatureValueCaps, sizeof(HIDP_VALUE_CAPS));
-
-    if (valueCaps == nullptr)
+    catch (const std::bad_alloc&)
     {
         return false;
     }
@@ -749,9 +772,12 @@ bool FillDeviceInfo(
 
     HidDevice->FeatureDataLength = newFeatureDataLength;
 
-    HidDevice->FeatureData = data = static_cast<PHID_DATA>(calloc(HidDevice->FeatureDataLength, sizeof(HID_DATA)));
-
-    if (data == nullptr)
+    try
+    {
+        HidDevice->FeatureData = data = new HID_DATA[HidDevice->FeatureDataLength];
+        std::memset(HidDevice->FeatureData, 0, HidDevice->FeatureDataLength * sizeof(HID_DATA));
+    }
+    catch (const std::bad_alloc&)
     {
         return false;
     }
@@ -779,7 +805,15 @@ bool FillDeviceInfo(
             HidP_Feature,
             buttonCaps->UsagePage,
             HidDevice->Ppd);
-        data->ButtonData.Usages = static_cast<PUSAGE>(calloc(data->ButtonData.MaxUsageLength, sizeof(USAGE)));
+        try
+        {
+            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength];
+            std::memset(data->ButtonData.Usages, 0, data->ButtonData.MaxUsageLength * sizeof(USAGE));
+        }
+        catch (const std::bad_alloc&)
+        {
+            return false;
+        }
 
         data->ReportID = buttonCaps->ReportID;
     }
@@ -820,7 +854,7 @@ bool FillDeviceInfo(
             dataIdx++;
         }
     }
-    
+
     return true;
 }
 
@@ -843,7 +877,7 @@ void CloseHidDevice(
 {
     if (HidDevice->DevicePath != nullptr)
     {
-        free(HidDevice->DevicePath);
+        delete[] HidDevice->DevicePath;
         HidDevice->DevicePath = nullptr;
     }
 
@@ -861,73 +895,73 @@ void CloseHidDevice(
 
     if (HidDevice->InputReportBuffer != nullptr)
     {
-        free(HidDevice->InputReportBuffer);
+        delete[] HidDevice->InputReportBuffer;
         HidDevice->InputReportBuffer = nullptr;
     }
 
     if (HidDevice->InputData != nullptr)
     {
-        free(HidDevice->InputData);
+        delete[] HidDevice->InputData;
         HidDevice->InputData = nullptr;
     }
 
     if (HidDevice->InputButtonCaps != nullptr)
     {
-        free(HidDevice->InputButtonCaps);
+        delete[] HidDevice->InputButtonCaps;
         HidDevice->InputButtonCaps = nullptr;
     }
 
     if (HidDevice->InputValueCaps != nullptr)
     {
-        free(HidDevice->InputValueCaps);
+        delete[] HidDevice->InputValueCaps;
         HidDevice->InputValueCaps = nullptr;
     }
 
     if (HidDevice->OutputReportBuffer != nullptr)
     {
-        free(HidDevice->OutputReportBuffer);
+        delete[] HidDevice->OutputReportBuffer;
         HidDevice->OutputReportBuffer = nullptr;
     }
 
     if (HidDevice->OutputData != nullptr)
     {
-        free(HidDevice->OutputData);
+        delete[] HidDevice->OutputData;
         HidDevice->OutputData = nullptr;
     }
 
     if (HidDevice->OutputButtonCaps != nullptr)
     {
-        free(HidDevice->OutputButtonCaps);
+        delete[] HidDevice->OutputButtonCaps;
         HidDevice->OutputButtonCaps = nullptr;
     }
 
     if (HidDevice->OutputValueCaps != nullptr)
     {
-        free(HidDevice->OutputValueCaps);
+        delete[] HidDevice->OutputValueCaps;
         HidDevice->OutputValueCaps = nullptr;
     }
 
     if (HidDevice->FeatureReportBuffer != nullptr)
     {
-        free(HidDevice->FeatureReportBuffer);
+        delete[] HidDevice->FeatureReportBuffer;
         HidDevice->FeatureReportBuffer = nullptr;
     }
 
     if (HidDevice->FeatureData != nullptr)
     {
-        free(HidDevice->FeatureData);
+        delete[] HidDevice->FeatureData;
         HidDevice->FeatureData = nullptr;
     }
 
     if (HidDevice->FeatureButtonCaps != nullptr)
     {
-        free(HidDevice->FeatureButtonCaps);
+        delete[] HidDevice->FeatureButtonCaps;
         HidDevice->FeatureButtonCaps = nullptr;
     }
 
     if (HidDevice->FeatureValueCaps != nullptr)
     {
-        free(HidDevice->FeatureValueCaps);
+        delete[] HidDevice->FeatureValueCaps;
         HidDevice->FeatureValueCaps = nullptr;
     }
 
