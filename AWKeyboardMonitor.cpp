@@ -47,25 +47,30 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
 
     for (ULONG iIndex = 0; iIndex < numberDevices; iIndex++, pDevice++)
     {
+        // If currently pointed to device is our target device, copy the DevicePath into a buffer to use later
         if (pDevice->Attributes.VendorID == targetVID &&
             pDevice->Attributes.ProductID == targetPID &&
             pDevice->Caps.UsagePage == AW_USAGEPAGE &&
             pDevice->Caps.Usage == AW_USAGE)
         {
             int iDevicePathSize = static_cast<int>(strnlen(pDevice->DevicePath, MAX_PATH) + 1);
-            targetDevicePath = new char[iDevicePathSize];
-            std::memset(targetDevicePath, 0, iDevicePathSize);
-            if (targetDevicePath == nullptr) 
-            { 
+            // Try to allocate memory for storing the Device Path
+            try
+            {
+                targetDevicePath = new char[iDevicePathSize];
+                std::memset(targetDevicePath, 0, iDevicePathSize);
+            }
+            catch (const std::bad_alloc&)
+            {
                 std::cerr << "Unable to allocate memory for device path." << std::endl;
-                return -1; 
+                return -1;
             }
             StringCbCopyA(targetDevicePath, iDevicePathSize, pDevice->DevicePath);
-            pDevice -= iIndex;
+            pDevice -= iIndex;          // Move pDevice pointer back to the beginning of the list again in preparation for the free statement
             break;
         }
     }
-    free(pDevice);
+    delete[] pDevice;
     pDevice = nullptr;
 
     if (targetDevicePath == nullptr)
@@ -74,8 +79,11 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
         return -1;
     }
 
+#ifdef _DEBUG
     std::cout << "Target Device located: " << targetDevicePath << std::endl;
+#endif
 
+    // Open target device for asynchronous reading
     bool openForAsync = OpenHidDevice(targetDevicePath, true, false, true, false, &targetDevice);
 
     delete[] targetDevicePath;
@@ -97,6 +105,7 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
 
     readResult = true;
 
+    // Begin monitoring loop. This likely could be made more efficient. Is is mostly a copy of Microsoft's hclient sample
     do
     {
         readResult = ReadOverlapped(&targetDevice, completionEvent, &overlap);
