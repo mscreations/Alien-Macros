@@ -150,6 +150,10 @@
     <ClCompile Include="src\pnp.cpp" />
     <ClCompile Include="src\report.cpp" />
     <ClCompile Include="version.cpp" />
+    <ClCompile Include="src\Utilities.cpp" />
+    <ClCompile Include="src\MacroAction.cpp" />
+    <ClCompile Include="src\MacroHandler.cpp" />
+    <ClCompile Include="src\Config.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources\Alien-Macros.rc" />
@@ -161,6 +165,10 @@
     <ClInclude Include="include\hid.h" />
     <ClInclude Include="include\resource.h" />
     <ClInclude Include="resources\resource.h" />
+    <ClInclude Include="include\Utilities.h" />
+    <ClInclude Include="include\Config.h" />
+    <ClInclude Include="include\MacroAction.h" />
+    <ClInclude Include="include\MacroHandler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

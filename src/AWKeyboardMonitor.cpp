@@ -26,6 +26,7 @@
 #include <strsafe.h>
 #include "hid.h"
 #include <AWKeyboardMonitor.h>
+#include "MacroHandler.h"
 
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -41,7 +42,9 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
     PCHAR                           targetDevicePath = nullptr;
     PHID_DEVICE                     pDevice = nullptr;
     ULONG                           numberDevices;
+    MacroHandler                    mh;
 
+    // Find all HID devices attached to the system.
     if (!FindKnownHidDevices(&pDevice, &numberDevices))
     {
         std::cerr << "No HID devices found." << std::endl;
@@ -136,28 +139,15 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
 
         USAGE usage = *targetDevice.InputData->ButtonData.Usages;
 
+        // If the key that is being pressed is between our min and max MACROs, process the macro key.
         if (usage >= MACROA && usage <= MACROD)
         {
-            HandleMacroKey(usage);
+#ifdef _DEBUG
+            std::cout << "Read key: 0x" << std::hex << usage << " Macro " << (char)(usage - 0xb) << std::endl;
+#endif
+            mh.Process(usage);
         }
     } while (readResult);
 
     return 0;
-}
-
-void HandleMacroKey(USAGE macroKey)
-{
-    std::cout << "Read key: 0x" << std::hex << macroKey << " Macro " << (char)(macroKey - 0xb) << std::endl;
-
-    INPUT inputs[2] = {};
-    ZeroMemory(inputs, sizeof(inputs));
-
-    inputs[0].type = INPUT_KEYBOARD;
-    inputs[0].ki.wVk = macroKey + 0x30;                            // Maps the macro keys to F13-F16
-
-    inputs[1].type = INPUT_KEYBOARD;
-    inputs[1].ki.wVk = macroKey + 0x30;
-    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
-
-    SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
 }

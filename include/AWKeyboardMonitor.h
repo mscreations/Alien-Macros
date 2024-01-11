@@ -40,4 +40,3 @@
 #define READ_THREAD_TIMEOUT     1000
 
 DWORD StartMonitor(WORD targetVID, WORD targetPID);
-void HandleMacroKey(USAGE macroKey);

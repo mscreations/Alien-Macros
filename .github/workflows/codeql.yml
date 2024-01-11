@@ -93,6 +93,7 @@ jobs:
       with:
         patterns: |
           -**/argparse.h
+          -**/json.hpp
         input: sarif-results/cpp.sarif
         output: sarif-results/cpp.sarif
 
