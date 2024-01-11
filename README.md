@@ -4,6 +4,7 @@
 [![CodeQL](https://github.com/mscreations/Alien-Macros/actions/workflows/codeql.yml/badge.svg)](https://github.com/mscreations/Alien-Macros/actions/workflows/codeql.yml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/5dfa11db7603480aaf3d61655035c9f1)](https://app.codacy.com/gh/mscreations/Alien-Macros/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://badgen.net/github/license/mscreations/Alien-Macros)](https://github.com/mscreations/Alien-Macros/blob/master/LICENSE)
+[![Version](https://badgen.net/github/release/mscreations/Alien-Macros)](https://github.com/mscreations/Alien-Macros/releases/)
 
 ## What is it?
 
