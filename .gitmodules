@@ -1,0 +1,4 @@
+[submodule "libconfig"]
+	path = libconfig
+	url = https://github.com/hyperrealm/libconfig.git
+	ignore = dirty
