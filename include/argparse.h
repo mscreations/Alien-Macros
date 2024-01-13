@@ -115,7 +115,7 @@ public:
       return TypeTraits<Type>::FromString(str);
     } else {
       std::istringstream stream(str);
-      Type value;
+      Type value{};
       stream >> value;
       return value;
     }
@@ -868,7 +868,8 @@ public:
 private:
   void DoParseArgs(const std::vector<std::string>& args) {
     size_t positional_arg_count = 0;
-    for (size_t i = 1, step; i < args.size(); i += step) {
+    for (size_t i = 1, step = 0; i < args.size(); i += step)
+    {
       if (args[i].length() > 2 && args[i].substr(0, 2) == "--") {
         step = ParseLongArg(args, i);
         ARGPARSE_ASSERT(step > 0);
@@ -918,16 +919,16 @@ private:
     ARGPARSE_FAIL_IF(holder == nullptr, "Unknown long option (`" + name + "`)");
 
     if (value) {
-      ARGPARSE_FAIL_IF(!holder->RequiresValue(),
+      ARGPARSE_FAIL_IF(holder && !holder->RequiresValue(),
                        "Long option doesn't require a value (`" + name + "`)");
 
       holder->ProcessValue(*value);
       return 1;
     }
-
-    if (!holder->RequiresValue()) {
-      holder->ProcessFlag();
-      return 1;
+    if (holder && !holder->RequiresValue())
+    {
+        holder->ProcessFlag();
+        return 1;
     }
 
     ARGPARSE_FAIL_IF(offset + 1 >= args.size(),
@@ -948,7 +949,7 @@ private:
       ARGPARSE_FAIL_IF(holder == nullptr,
                        std::string("Unknown short option (`") + ch + "`)");
 
-      if (holder->RequiresValue()) {
+      if (holder && holder->RequiresValue()) {
         if (i + 1 == arg.length()) {
           // last short option of a group requiring a value
           // (e.g. -euxo pipefail)
