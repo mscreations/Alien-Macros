@@ -15,4 +15,6 @@ private:
     bool Send(WORD wVk, bool shift);
     bool Send(char outChar);
     bool Send(std::string outputString);
+    std::vector<INPUT> GetKeystrokes(WORD wVk, bool shift);
+    std::vector<INPUT> GetKeystrokes(char outChar);
 };

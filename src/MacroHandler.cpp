@@ -34,49 +34,61 @@ void MacroHandler::Process(USAGE macroKey)
 
 bool MacroHandler::Send(WORD wVk, bool shift)
 {
-    std::vector<INPUT> inputs(shift ? 4 : 2);
-    std::memset(&inputs[0], 0, inputs.size() * sizeof(INPUT));
-    size_t i = 0;
-    if (shift)
-    {
-        inputs[i].type = INPUT_KEYBOARD;
-        inputs[i].ki.wVk = VK_LSHIFT;
-        i++;
-    }
-
-    inputs[i].type = INPUT_KEYBOARD;
-    inputs[i++].ki.wVk = wVk;
-
-    inputs[i] = inputs[i - 1];
-    inputs[i++].ki.dwFlags = KEYEVENTF_KEYUP;
-
-    if (shift)
-    {
-        inputs[i] = inputs[0];
-        inputs[i].ki.dwFlags = KEYEVENTF_KEYUP;
-    }
-
-    int sentCount = SendInput((UINT)inputs.size(), &inputs[0], sizeof(INPUT));
+    std::vector<INPUT> inputs = GetKeystrokes(wVk, shift);
+    int sentCount = SendInput(static_cast<UINT>(inputs.size()), &inputs[0], sizeof(INPUT));
     return (sentCount == inputs.size());
 }
 
 bool MacroHandler::Send(char outChar)
 {
-    // This assumes US keyboard layout. Not sure if other people might need the Keyboard Layout to be changed in order to properly send characters.
-    SHORT vk = VkKeyScanExA(outChar, LoadKeyboardLayoutA("00000409", 0));
-    return Send((WORD)(vk & 0xFF), (bool)((vk & 0xFF00) >> 8));
+    SHORT vk = VkKeyScanExA(outChar, GetKeyboardLayout(0));
+    return Send(static_cast<WORD>((vk & 0xFF)), static_cast<bool>((vk & 0x0100) >> 8));
 }
 
 bool MacroHandler::Send(std::string outputString)
 {
-    for (char& c : outputString)
+    std::vector<INPUT> inputs;
+
+    for (const char& c : outputString)
     {
-        if (!Send(c))
-        {
-            return false;
-        }
-        Sleep(20);          // Without the delay, the whole string won't show up unless the key is pressed again.
-        // 20 ms seems good for my system, but this may need adjusted for other people.
+        std::vector<INPUT> charInputs = GetKeystrokes(c);
+        inputs.insert(inputs.end(), charInputs.begin(), charInputs.end());
     }
-    return true;
+    int SentCount = SendInput(static_cast<UINT>(inputs.size()), &inputs[0], sizeof(INPUT));
+    return (SentCount == inputs.size());
+}
+
+std::vector<INPUT> MacroHandler::GetKeystrokes(WORD wVk, bool shift)
+{
+    std::vector<INPUT> inputs;
+    INPUT shiftInput{};
+    INPUT charInput{};
+
+    if (shift)
+    {
+        shiftInput.type = INPUT_KEYBOARD;
+        shiftInput.ki.wVk = VK_LSHIFT;
+        inputs.push_back(shiftInput);
+    }
+
+    charInput.type = INPUT_KEYBOARD;
+    charInput.ki.wVk = wVk;
+    inputs.push_back(charInput);
+
+    charInput.ki.dwFlags = KEYEVENTF_KEYUP;
+    inputs.push_back(charInput);
+
+    if (shift)
+    {
+        shiftInput.ki.dwFlags = KEYEVENTF_KEYUP;
+        inputs.push_back(shiftInput);
+    }
+
+    return inputs;
+}
+
+std::vector<INPUT> MacroHandler::GetKeystrokes(char outChar)
+{
+    SHORT vk = VkKeyScanExA(outChar, GetKeyboardLayout(0));
+    return GetKeystrokes(static_cast<WORD>((vk & 0xFF)), static_cast<bool>((vk & 0x0100) >> 8));
 }
