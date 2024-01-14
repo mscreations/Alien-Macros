@@ -33,7 +33,7 @@
     <ClCompile Include="src\MacroHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Config.cpp">
+    <ClCompile Include="src\ProgSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\version.cpp">
@@ -61,7 +61,7 @@
     <ClInclude Include="resources\resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Config.h">
+    <ClInclude Include="include\ProgSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\MacroAction.h">

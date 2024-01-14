@@ -1,12 +1,15 @@
 #pragma once
 #include <string>
+#include "libconfig.h++"
 
-class Config
+#define DEFAULT_CFG_FILENAME    "awmacros.cfg"
+
+class ProgSettings
 {
 public:
-    Config();
-    Config(std::string filename);
-    ~Config();
+    ProgSettings();
+    ProgSettings(std::string filename);
+    ~ProgSettings();
 
     void CreateBlank();
     void SetVID(short newVID);

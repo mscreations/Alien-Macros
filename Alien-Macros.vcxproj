@@ -159,7 +159,7 @@
     <ClCompile Include="src\version.cpp" />
     <ClCompile Include="src\MacroAction.cpp" />
     <ClCompile Include="src\MacroHandler.cpp" />
-    <ClCompile Include="src\Config.cpp" />
+    <ClCompile Include="src\ProgSettings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources\Alien-Macros.rc" />
@@ -171,7 +171,7 @@
     <ClInclude Include="include\AWKeyboardMonitor.h" />
     <ClInclude Include="include\hid.h" />
     <ClInclude Include="resources\resource.h" />
-    <ClInclude Include="include\Config.h" />
+    <ClInclude Include="include\ProgSettings.h" />
     <ClInclude Include="include\MacroAction.h" />
     <ClInclude Include="include\MacroHandler.h" />
   </ItemGroup>

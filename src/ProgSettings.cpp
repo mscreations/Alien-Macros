@@ -1,6 +1,6 @@
-#include "Config.h"
+#include "ProgSettings.h"
 
-Config::Config()
+ProgSettings::ProgSettings()
 {
     // LOAD CONFIG FROM NORMAL LOCATION (WHEREVER THAT MAY END UP BEING)
     targetPID = 0x0d62;
@@ -8,52 +8,52 @@ Config::Config()
 
 }
 
-Config::Config(std::string filename) 
+ProgSettings::ProgSettings(std::string filename)
 {
     // LOAD SPECIFIED CONFIG FROM FILENAME
     targetPID = 0x0d62;
     targetVID = 0x1a1c;
-    
+
 }
 
-Config::~Config()
+ProgSettings::~ProgSettings()
 {
     // SAVE CONFIG TO FILE
 }
 
-void Config::CreateBlank()
+void ProgSettings::CreateBlank()
 {
     // TODO: Add your implementation code here.
     targetPID = 0x0d62;
     targetVID = 0x1a1c;
 }
 
-void Config::SetVID(short newVID)
+void ProgSettings::SetVID(short newVID)
 {
     targetVID = newVID;
 }
 
-void Config::SetPID(short newPID)
-{   
+void ProgSettings::SetPID(short newPID)
+{
     targetPID = newPID;
 }
 
-short Config::GetVID()
+short ProgSettings::GetVID()
 {
     return targetVID;
 }
 
-short Config::GetPID()
+short ProgSettings::GetPID()
 {
     return targetPID;
 }
 
-bool Config::Save()
+bool ProgSettings::Save()
 {
     return true;
 }
 
-bool Config::Load(std::string filename)
+bool ProgSettings::Load(std::string filename)
 {
     return true;
 }
