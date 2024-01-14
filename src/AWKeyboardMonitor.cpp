@@ -21,8 +21,11 @@
  *
  */
 
-#include "Alien-Macros.h"
+#include <iostream>
+#include <wtypes.h>
 #include <strsafe.h>
+#include "hid.h"
+#include <AWKeyboardMonitor.h>
 
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
