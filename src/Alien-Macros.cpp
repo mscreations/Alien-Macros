@@ -26,6 +26,7 @@
 #include "version.h"
 #include "argparse.h"
 #include "AWKeyboardMonitor.h"
+#include "ProgSettings.h"
 
 int main(int argc, char* argv[])
 {
@@ -33,6 +34,8 @@ int main(int argc, char* argv[])
 
     auto& vid = parser.AddArg<std::string>("vid", 'v', "Target VID").Default(AW_KB_VID);
     auto& pid = parser.AddArg<std::string>("pid", 'p', "Target PID").Default(AW_KB_PID);
+    auto& ConfigFile = parser.AddArg<std::string>("config", 'c', "Configuration File").Default(DEFAULT_CFG_FILENAME);
+
     parser.ParseArgs(argc, argv);
 
     std::regex re("(?:0x)[0-9a-fA-F]{4}");
