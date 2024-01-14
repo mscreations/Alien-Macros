@@ -14,8 +14,8 @@ public:
     void CreateBlank();
     void SetVID(short newVID);
     void SetPID(short newPID);
-    short GetVID();
-    short GetPID();
+    short GetVID() const;
+    short GetPID() const;
 
 private:
     short targetVID;

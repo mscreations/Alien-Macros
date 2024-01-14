@@ -38,12 +38,12 @@ void ProgSettings::SetPID(short newPID)
     targetPID = newPID;
 }
 
-short ProgSettings::GetVID()
+short ProgSettings::GetVID() const
 {
     return targetVID;
 }
 
-short ProgSettings::GetPID()
+short ProgSettings::GetPID() const
 {
     return targetPID;
 }

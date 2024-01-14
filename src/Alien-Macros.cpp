@@ -42,8 +42,8 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    WORD targetVID = (WORD)std::stoi(*vid, nullptr, 16);
-    WORD targetPID = (WORD)std::stoi(*pid, nullptr, 16);
+    WORD targetVID = static_cast<WORD>(std::stoi(*vid, nullptr, 16));
+    WORD targetPID = static_cast<WORD>(std::stoi(*pid, nullptr, 16));
 
     std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
 

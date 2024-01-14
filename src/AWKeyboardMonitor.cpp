@@ -143,7 +143,7 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
         if (usage >= MACROA && usage <= MACROD)
         {
 #ifdef _DEBUG
-            std::cout << "Read key: 0x" << std::hex << usage << " Macro " << (char)(usage - 0xb) << std::endl;
+            std::cout << "Read key: 0x" << std::hex << usage << " Macro " << static_cast<char>(usage - 0xb) << std::endl;
 #endif
             mh.Process(usage);
         }
