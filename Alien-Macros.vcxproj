@@ -72,6 +72,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
+    <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
@@ -120,6 +121,10 @@
       <Command>taskkill /f /fi "imagename eq $(TargetFileName)"</Command>
       <Message>Kill running process</Message>
     </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>powershell -File "$(ProjectDir)updateversion.ps1"</Command>
+      <Outputs>version.h</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -144,18 +149,18 @@
     <ClCompile Include="src\AWKeyboardMonitor.cpp" />
     <ClCompile Include="src\pnp.cpp" />
     <ClCompile Include="src\report.cpp" />
-    <ClCompile Include="src\Utilities.cpp" />
+    <ClCompile Include="version.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources\Alien-Macros.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Alien-Macros.h" />
+    <ClInclude Include="include\version.h" />
     <ClInclude Include="include\argparse.h" />
     <ClInclude Include="include\AWKeyboardMonitor.h" />
     <ClInclude Include="include\hid.h" />
     <ClInclude Include="include\resource.h" />
-    <ClInclude Include="include\Utilities.h" />
+    <ClInclude Include="resources\resource.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

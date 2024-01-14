@@ -22,8 +22,10 @@
  */
 
 #include <regex>
-#include "Alien-Macros.h"
+#include <wtypes.h>
+#include "version.h"
 #include "argparse.h"
+#include "AWKeyboardMonitor.h"
 
 int main(int argc, char* argv[])
 {
