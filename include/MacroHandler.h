@@ -1,7 +1,8 @@
 #pragma once
-#include "Alien-Macros.h"
-#include "MacroAction.h"
 #include <unordered_map>
+#include <wtypes.h>
+#include "hid.h"
+#include "MacroAction.h"
 
 class MacroHandler
 {

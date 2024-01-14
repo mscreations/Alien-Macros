@@ -362,3 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 *.cfg
+
+# Ignore changes to version.h as it automatically changes on build.
+include/version-git.h
