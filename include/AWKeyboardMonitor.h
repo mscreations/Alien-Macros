@@ -39,4 +39,4 @@
 
 #define READ_THREAD_TIMEOUT     1000
 
-DWORD StartMonitor(WORD targetVID, WORD targetPID);
+bool StartMonitor(WORD targetVID, WORD targetPID);

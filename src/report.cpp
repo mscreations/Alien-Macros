@@ -308,7 +308,7 @@ RoutineDescription:
         {
             memset(HidDevice->FeatureReportBuffer, 0x00, HidDevice->Caps.FeatureReportByteLength);
 
-            HidDevice->FeatureReportBuffer[0] = (UCHAR)pData->ReportID;
+            HidDevice->FeatureReportBuffer[0] = static_cast<UCHAR>(pData->ReportID);
 
             FeatureStatus = HidD_GetFeature(HidDevice->HidDevice,
                                             HidDevice->FeatureReportBuffer,
@@ -399,11 +399,11 @@ Routine Description:
                 //          Caps2 has UsagePage 07 and UsageRange of 0xe0 - 0xe7
                 //
                 //        However, calling GetUsages for each of the data structs
-                //          will return the same list of usages.  It is the 
+                //          will return the same list of usages.  It is the
                 //          responsibility of the caller to set in the HID_DEVICE
                 //          structure which usages actually are valid for the
-                //          that structure. 
-                //      
+                //          that structure.
+                //
 
                 /*
                 // Search through the usage list and remove those that

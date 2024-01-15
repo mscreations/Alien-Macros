@@ -5,8 +5,8 @@ enum MacroActionCode
 {
     MA_Invalid,
     MA_VirtualKey,
-    MA_String,
-    MA_Char
+    MA_Char,
+    MA_String
 };
 
 class MacroAction

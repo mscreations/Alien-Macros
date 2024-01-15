@@ -61,18 +61,14 @@ bool MacroHandler::Send(std::string outputString)
 std::vector<INPUT> MacroHandler::GetKeystrokes(WORD wVk, bool shift)
 {
     std::vector<INPUT> inputs;
-    INPUT shiftInput{};
-    INPUT charInput{};
+    INPUT shiftInput{ .type = INPUT_KEYBOARD, .ki = {VK_LSHIFT, 0, 0, 0, 0} };
+    INPUT charInput{ .type = INPUT_KEYBOARD, .ki = {wVk, 0, 0, 0, 0 } };
 
     if (shift)
     {
-        shiftInput.type = INPUT_KEYBOARD;
-        shiftInput.ki.wVk = VK_LSHIFT;
         inputs.push_back(shiftInput);
     }
 
-    charInput.type = INPUT_KEYBOARD;
-    charInput.ki.wVk = wVk;
     inputs.push_back(charInput);
 
     charInput.ki.dwFlags = KEYEVENTF_KEYUP;

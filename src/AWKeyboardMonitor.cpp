@@ -31,7 +31,9 @@
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
 
-DWORD StartMonitor(WORD targetVID, WORD targetPID)
+using namespace std;
+
+bool StartMonitor(WORD targetVID, WORD targetPID)
 {
     static HID_DEVICE               targetDevice;
     HANDLE                          completionEvent;
@@ -47,8 +49,8 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
     // Find all HID devices attached to the system.
     if (!FindKnownHidDevices(&pDevice, &numberDevices))
     {
-        std::cerr << "No HID devices found." << std::endl;
-        return -1;
+        cerr << "No HID devices found." << endl;
+        return false;
     }
 
     for (ULONG iIndex = 0; iIndex < numberDevices; iIndex++, pDevice++)
@@ -63,13 +65,12 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
             // Try to allocate memory for storing the Device Path
             try
             {
-                targetDevicePath = new char[iDevicePathSize];
-                std::memset(targetDevicePath, 0, iDevicePathSize);
+                targetDevicePath = new char[iDevicePathSize] {};
             }
-            catch (const std::bad_alloc&)
+            catch (const bad_alloc&)
             {
-                std::cerr << "Unable to allocate memory for device path." << std::endl;
-                return -1;
+                cerr << "Unable to allocate memory for device path." << endl;
+                return false;
             }
             StringCbCopyA(targetDevicePath, iDevicePathSize, pDevice->DevicePath);
             pDevice -= iIndex;          // Move pDevice pointer back to the beginning of the list again in preparation for the free statement
@@ -81,12 +82,12 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
 
     if (targetDevicePath == nullptr)
     {
-        std::cerr << "Target device could not be located!" << std::endl;
-        return -1;
+        cerr << "Target device could not be located!" << endl;
+        return false;
     }
 
 #ifdef _DEBUG
-    std::cout << "Target Device located: " << targetDevicePath << std::endl;
+    cout << "Target Device located: " << targetDevicePath << endl;
 #endif
 
     // Open target device for asynchronous reading
@@ -96,17 +97,17 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
 
     if (!openForAsync)
     {
-        std::cerr << "Unable to open target HID device for async read" << std::endl;
-        return -1;
+        cerr << "Unable to open target HID device for async read" << endl;
+        return false;
     }
 
-    std::cout << "Starting monitor" << std::endl;
+    cout << "Starting monitor" << endl;
 
     completionEvent = CreateEvent(nullptr, false, false, nullptr);
 
     if (completionEvent == nullptr)
     {
-        return -1;
+        return false;
     }
 
     readResult = true;
@@ -143,11 +144,11 @@ DWORD StartMonitor(WORD targetVID, WORD targetPID)
         if (usage >= MACROA && usage <= MACROD)
         {
 #ifdef _DEBUG
-            std::cout << "Read key: 0x" << std::hex << usage << " Macro " << static_cast<char>(usage - 0xb) << std::endl;
+            cout << "Read key: 0x" << hex << usage << " Macro " << static_cast<char>(usage - 0xb) << endl;
 #endif
             mh.Process(usage);
         }
     } while (readResult);
 
-    return 0;
+    return true;
 }

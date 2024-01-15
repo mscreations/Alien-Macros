@@ -28,7 +28,7 @@ Environment:
 #include "hid.h"
 
 bool FindKnownHidDevices(
-    OUT PHID_DEVICE*    HidDevices,     // A array of struct _HID_DEVICE
+    OUT PHID_DEVICE* HidDevices,     // A array of struct _HID_DEVICE
     OUT PULONG          NumberDevices   // the length of this array.
 )
 /*++
@@ -81,21 +81,19 @@ Routine Description:
         {
             if (*HidDevices)
             {
-                newHidDevices = new HID_DEVICE[*NumberDevices];
-                std::memset(newHidDevices, 0, *NumberDevices * sizeof(HID_DEVICE));
+                newHidDevices = new HID_DEVICE[*NumberDevices]{};
 
                 // Copy existing data to the new block
                 std::copy(*HidDevices, (*HidDevices + i), newHidDevices);
 
                 // Deallocate old block
-                delete[] *HidDevices;
+                delete[] * HidDevices;
 
                 *HidDevices = newHidDevices;
             }
             else
             {
-                *HidDevices = new HID_DEVICE[*NumberDevices];
-                std::memset(*HidDevices, 0, *NumberDevices * sizeof(HID_DEVICE));
+                *HidDevices = new HID_DEVICE[*NumberDevices]{};
             }
         }
         catch (const std::bad_alloc&)
@@ -141,15 +139,14 @@ Routine Description:
 
                 try
                 {
-                    functionClassDeviceData = new SP_DEVICE_INTERFACE_DETAIL_DATA_A[requiredLength];
-                    std::memset(functionClassDeviceData, 0, requiredLength * sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A));
+                    functionClassDeviceData = new SP_DEVICE_INTERFACE_DETAIL_DATA_A[requiredLength]{};
 
                 }
                 catch (const std::bad_alloc&)
                 {
                     if (*HidDevices != nullptr)
                     {
-                        delete[] *HidDevices;
+                        delete[] * HidDevices;
                         *HidDevices = nullptr;
                     }
                     return false;
@@ -188,8 +185,7 @@ Routine Description:
 
                         try
                         {
-                            hidDeviceInst->DevicePath = new char[iDevicePathSize];
-                            std::memset(hidDeviceInst->DevicePath, 0, iDevicePathSize);
+                            hidDeviceInst->DevicePath = new char[iDevicePathSize] {};
                         }
                         catch (const std::bad_alloc&)
                         {
@@ -260,8 +256,7 @@ RoutineDescription:
 
     try
     {
-        HidDevice->DevicePath = new char[iDevicePathSize];
-        std::memset(HidDevice->DevicePath, 0, iDevicePathSize);
+        HidDevice->DevicePath = new char[iDevicePathSize] {};
     }
     catch (const std::bad_alloc&)
     {
@@ -375,18 +370,14 @@ bool FillDeviceInfo(
 
     try
     {
-        HidDevice->InputReportBuffer = new char[HidDevice->Caps.InputReportByteLength];
-        std::memset(HidDevice->InputReportBuffer, 0, HidDevice->Caps.InputReportByteLength);
+        HidDevice->InputReportBuffer = new char[HidDevice->Caps.InputReportByteLength] {};
 
-    //
-    // Allocate memory to hold the button and value capabilities.
-    // NumberXXCaps is in terms of array elements.
-    //
-        HidDevice->InputButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberInputButtonCaps];
-        std::memset(HidDevice->InputButtonCaps, 0, HidDevice->Caps.NumberInputButtonCaps * sizeof(HIDP_BUTTON_CAPS));
-
-        HidDevice->InputValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberInputValueCaps];
-        std::memset(HidDevice->InputValueCaps, 0, HidDevice->Caps.NumberInputValueCaps * sizeof(HIDP_VALUE_CAPS));
+        //
+        // Allocate memory to hold the button and value capabilities.
+        // NumberXXCaps is in terms of array elements.
+        //
+        HidDevice->InputButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberInputButtonCaps]{};
+        HidDevice->InputValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberInputValueCaps]{};
     }
     catch (const std::bad_alloc&)
     {
@@ -466,8 +457,7 @@ bool FillDeviceInfo(
 
     try
     {
-        HidDevice->InputData = data = new HID_DATA[HidDevice->InputDataLength];
-        std::memset(HidDevice->InputData, 0, HidDevice->InputDataLength * sizeof(HID_DATA));
+        HidDevice->InputData = data = new HID_DATA[HidDevice->InputDataLength]{};
     }
     catch (const std::bad_alloc&)
     {
@@ -502,8 +492,7 @@ bool FillDeviceInfo(
 
         try
         {
-            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength];
-            std::memset(data->ButtonData.Usages, 0, data->ButtonData.MaxUsageLength * sizeof(USAGE));
+            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength]{};
         }
         catch (const std::bad_alloc&)
         {
@@ -560,14 +549,9 @@ bool FillDeviceInfo(
 
     try
     {
-        HidDevice->OutputReportBuffer = new char[HidDevice->Caps.OutputReportByteLength];
-        std::memset(HidDevice->OutputReportBuffer, 0, HidDevice->Caps.OutputReportByteLength);
-
-        HidDevice->OutputButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberOutputButtonCaps];
-        std::memset(HidDevice->OutputButtonCaps, 0, HidDevice->Caps.NumberOutputButtonCaps * sizeof(HIDP_BUTTON_CAPS));
-
-        HidDevice->OutputValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberOutputValueCaps];
-        std::memset(HidDevice->OutputValueCaps, 0, HidDevice->Caps.NumberOutputValueCaps * sizeof(HIDP_VALUE_CAPS));
+        HidDevice->OutputReportBuffer = new char[HidDevice->Caps.OutputReportByteLength] {};
+        HidDevice->OutputButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberOutputButtonCaps]{};
+        HidDevice->OutputValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberOutputValueCaps]{};
     }
     catch (const std::bad_alloc&)
     {
@@ -618,8 +602,7 @@ bool FillDeviceInfo(
 
     try
     {
-        HidDevice->OutputData = data = new HID_DATA[HidDevice->OutputDataLength];
-        std::memset(HidDevice->OutputData, 0, HidDevice->OutputDataLength * sizeof(HID_DATA));
+        HidDevice->OutputData = data = new HID_DATA[HidDevice->OutputDataLength]{};
     }
     catch (const std::bad_alloc&)
     {
@@ -667,8 +650,7 @@ bool FillDeviceInfo(
 
         try
         {
-            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength];
-            std::memset(data->ButtonData.Usages, 0, data->ButtonData.MaxUsageLength * sizeof(USAGE));
+            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength]{};
         }
         catch (const std::bad_alloc&)
         {
@@ -711,14 +693,9 @@ bool FillDeviceInfo(
 
     try
     {
-        HidDevice->FeatureReportBuffer = new char[HidDevice->Caps.FeatureReportByteLength];
-        std::memset(HidDevice->FeatureReportBuffer, 0, HidDevice->Caps.FeatureReportByteLength);
-
-        HidDevice->FeatureButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberFeatureButtonCaps];
-        std::memset(HidDevice->FeatureButtonCaps, 0, HidDevice->Caps.NumberFeatureButtonCaps * sizeof(HIDP_BUTTON_CAPS));
-
-        HidDevice->FeatureValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberFeatureValueCaps];
-        std::memset(HidDevice->FeatureValueCaps, 0, HidDevice->Caps.NumberFeatureValueCaps * sizeof(HIDP_VALUE_CAPS));
+        HidDevice->FeatureReportBuffer = new char[HidDevice->Caps.FeatureReportByteLength] {};
+        HidDevice->FeatureButtonCaps = buttonCaps = new HIDP_BUTTON_CAPS[HidDevice->Caps.NumberFeatureButtonCaps]{};
+        HidDevice->FeatureValueCaps = valueCaps = new HIDP_VALUE_CAPS[HidDevice->Caps.NumberFeatureValueCaps]{};
     }
     catch (const std::bad_alloc&)
     {
@@ -774,8 +751,7 @@ bool FillDeviceInfo(
 
     try
     {
-        HidDevice->FeatureData = data = new HID_DATA[HidDevice->FeatureDataLength];
-        std::memset(HidDevice->FeatureData, 0, HidDevice->FeatureDataLength * sizeof(HID_DATA));
+        HidDevice->FeatureData = data = new HID_DATA[HidDevice->FeatureDataLength]{};
     }
     catch (const std::bad_alloc&)
     {
@@ -807,8 +783,7 @@ bool FillDeviceInfo(
             HidDevice->Ppd);
         try
         {
-            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength];
-            std::memset(data->ButtonData.Usages, 0, data->ButtonData.MaxUsageLength * sizeof(USAGE));
+            data->ButtonData.Usages = new USAGE[data->ButtonData.MaxUsageLength]{};
         }
         catch (const std::bad_alloc&)
         {
