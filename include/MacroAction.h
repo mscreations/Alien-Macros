@@ -1,12 +1,12 @@
 #pragma once
 #include <iostream>
 
-enum MacroActionCode
+enum class MacroActionCode : int
 {
-    MA_Invalid,
-    MA_VirtualKey,
-    MA_Char,
-    MA_String
+    Invalid,
+    VirtualKey,
+    Char,
+    String
 };
 
 class MacroAction
@@ -23,9 +23,9 @@ public:
     MacroAction(std::string newPayload);
     MacroAction(short newPayload);
     ~MacroAction();
-    MacroActionCode GetActionCode();
-    char GetChar();
-    std::string GetString();
-    short GetVK();
+    MacroActionCode GetActionCode() const;
+    char GetChar() const;
+    std::string GetString() const;
+    short GetVK() const;
 };
 

@@ -4,52 +4,52 @@ void MacroAction::SetPayload(char c, short vk, std::string s)
 {
     this->_charPayload = c;
     this->_vkPayload = vk;
-    this->_strPayload = s;   
+    this->_strPayload = s;
 }
 
 MacroAction::MacroAction()
 {
     SetPayload(NULL, NULL, "");
-    this->ActionCode = MA_Invalid;
+    this->ActionCode = MacroActionCode::Invalid;
 }
 
 MacroAction::MacroAction(char newPayload)
 {
-    this->ActionCode = MA_Char;
+    this->ActionCode = MacroActionCode::Char;
     SetPayload(newPayload, NULL, "");
 }
 
 MacroAction::MacroAction(std::string newPayload)
 {
-    this->ActionCode = MA_String;
+    this->ActionCode = MacroActionCode::String;
     SetPayload(NULL, NULL, newPayload);
 }
 
 MacroAction::MacroAction(short newPayload)
 {
-    this->ActionCode = MA_VirtualKey;
+    this->ActionCode = MacroActionCode::VirtualKey;
     SetPayload(NULL, newPayload, "");
 }
 MacroAction::~MacroAction()
 {
 }
 
-MacroActionCode MacroAction::GetActionCode()
+MacroActionCode MacroAction::GetActionCode() const
 {
     return this->ActionCode;
 }
 
-char MacroAction::GetChar()
+char MacroAction::GetChar() const
 {
     return this->_charPayload;
 }
 
-std::string MacroAction::GetString()
+std::string MacroAction::GetString() const
 {
     return this->_strPayload;
 }
 
-short MacroAction::GetVK()
+short MacroAction::GetVK() const
 {
     return this->_vkPayload;
 }

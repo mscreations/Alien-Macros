@@ -20,13 +20,13 @@ void MacroHandler::Process(USAGE macroKey)
     MacroAction action = macroKeys[macroKey];
     switch (action.GetActionCode())
     {
-        case MA_VirtualKey:
+        case MacroActionCode::VirtualKey:
             Send(action.GetVK(), false);
             break;
-        case MA_Char:
+        case MacroActionCode::Char:
             Send(action.GetChar());
             break;
-        case MA_String:
+        case MacroActionCode::String:
             Send(action.GetString());
             break;
     }
