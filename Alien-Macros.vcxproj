@@ -128,7 +128,7 @@
       <Message>Kill running process</Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>powershell -File "$(ProjectDir)updateversion.ps1"</Command>
+      <Command>powershell -NoProfile -File "$(ProjectDir)updateversion.ps1"</Command>
       <Outputs>version.h</Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
