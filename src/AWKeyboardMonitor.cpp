@@ -27,6 +27,7 @@
 #include "hid.h"
 #include <AWKeyboardMonitor.h>
 #include "MacroHandler.h"
+#include <format>
 
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -46,6 +47,10 @@ bool StartMonitor(WORD targetVID, WORD targetPID)
     ULONG                           numberDevices;
     MacroHandler                    mh;
 
+    char* manufacturerName{};
+    char* productName{};
+    short vid, pid, usagepage, usagecode;
+
     // Find all HID devices attached to the system.
     if (!FindKnownHidDevices(&pDevice, &numberDevices))
     {
@@ -62,6 +67,44 @@ bool StartMonitor(WORD targetVID, WORD targetPID)
             pDevice->Caps.Usage == AW_USAGE)
         {
             int iDevicePathSize = static_cast<int>(strnlen(pDevice->DevicePath, MAX_PATH) + 1);
+
+            // Allocate space for wide-char Manufacturer string
+            wchar_t* wmanufacturerName{};
+            wchar_t* wproductName{};
+            try
+            {
+                wmanufacturerName = new wchar_t[256] {};
+                wproductName = new wchar_t[256] {};
+            }
+            catch (const bad_alloc&)
+            {
+                return false;
+            }
+
+            if (HidD_GetManufacturerString(pDevice->HidDevice, wmanufacturerName, 256) && HidD_GetProductString(pDevice->HidDevice, wproductName, 256))
+            {
+                int mnsizeRequired = WideCharToMultiByte(CP_UTF8, 0, wmanufacturerName, -1, nullptr, 0, NULL, NULL);
+                int pnsizeRequired = WideCharToMultiByte(CP_UTF8, 0, wproductName, -1, nullptr, 0, NULL, NULL);
+                try
+                {
+                    manufacturerName = new char[mnsizeRequired] {};
+                    productName = new char[pnsizeRequired] {};
+                }
+                catch (const bad_alloc&)
+                {
+                    return false;
+                }
+                WideCharToMultiByte(CP_UTF8, 0, wmanufacturerName, -1, manufacturerName, mnsizeRequired, NULL, NULL);
+                WideCharToMultiByte(CP_UTF8, 0, wproductName, -1, productName, pnsizeRequired, NULL, NULL);
+                delete[] wmanufacturerName;             // no longer necessary.
+                delete[] wproductName;
+            }
+
+            vid = pDevice->Attributes.VendorID;
+            pid = pDevice->Attributes.ProductID;
+            usagepage = pDevice->Caps.UsagePage;
+            usagecode = pDevice->Caps.Usage;
+
             // Try to allocate memory for storing the Device Path
             try
             {
@@ -87,8 +130,12 @@ bool StartMonitor(WORD targetVID, WORD targetPID)
     }
 
 #ifdef _DEBUG
-    cout << "Target Device located: " << targetDevicePath << endl;
+    cout << format("\nTarget Device located:\n{} {}\nVID:        {:#06x}\nPID:        {:#06x}\nUsagePage:  {:#04x}\nUsage:      {:#04x}\n",
+                   manufacturerName, productName, vid, pid, usagepage, usagecode) << endl;
 #endif
+
+    delete[] manufacturerName;          // no longer needed. Can be deleted.
+    delete[] productName;
 
     // Open target device for asynchronous reading
     bool openForAsync = OpenHidDevice(targetDevicePath, true, false, true, false, &targetDevice);
