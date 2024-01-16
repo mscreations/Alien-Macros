@@ -30,25 +30,9 @@
 
 int main(int argc, char* argv[])
 {
-    argparse::Parser parser;
-
-    auto& vid = parser.AddArg<std::string>("vid", 'v', "Target VID").Default(AW_KB_VID);
-    auto& pid = parser.AddArg<std::string>("pid", 'p', "Target PID").Default(AW_KB_PID);
-    auto& ConfigFile = parser.AddArg<std::string>("config", 'c', "Configuration File").Default(DEFAULT_CFG_FILENAME);
-
-    parser.ParseArgs(argc, argv);
-
-    std::regex re("(?:0x)[0-9a-fA-F]{4}");
-    if (!std::regex_match(*pid, re) || !std::regex_match(*vid, re))
-    {
-        std::cerr << "VID/PID is invalid. Please make sure it is in the format 0xXXXX where XXXX is the hexadecimal VID/PID." << std::endl;
-        return -1;
-    }
-
-    WORD targetVID = static_cast<WORD>(std::stoi(*vid, nullptr, 16));
-    WORD targetPID = static_cast<WORD>(std::stoi(*pid, nullptr, 16));
+    ProgSettings ps{ argc, argv };
 
     std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
 
-    return StartMonitor(targetVID, targetPID);
+    return StartMonitor(&ps);
 }

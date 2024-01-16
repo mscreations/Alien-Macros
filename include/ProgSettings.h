@@ -1,28 +1,54 @@
 #pragma once
-#include <string>
 #include "libconfig.h++"
+#include "MacroAction.h"
+#include <string>
+#include <unordered_map>
 
-#define DEFAULT_CFG_FILENAME    "awmacros.cfg"
+constexpr auto DEFAULT_CFG_FILENAME = "awmacros.cfg";
+
+// configuration file section labels
+constexpr auto TARGET_DEVICE = "targetdevice";
+constexpr auto VID = "vid";
+constexpr auto PID = "pid";
+constexpr auto USAGEPAGE = "usagepage";
+constexpr auto USAGECODE = "usagecode";
+constexpr auto MACRO_COUNT = "macrocount";
+constexpr auto MACROS = "macros";
+constexpr auto SCANCODE = "scancode";
+constexpr auto PAYLOAD_TYPE = "payloadtype";
+constexpr auto MACRO_ACTION = "macroaction";
+constexpr auto MACRO_PAYLOAD = "macropayload";
+
+#define AW_KB_VID       "0x0d62"
+#define AW_KB_PID       "0x1a1c"
+
+using namespace std;
 
 class ProgSettings
 {
 public:
     ProgSettings();
-    ProgSettings(std::string filename);
+    ProgSettings(int argc, char* argv[]);
+    ProgSettings(string filename);
     ~ProgSettings();
 
     void CreateBlank();
-    void SetVID(short newVID);
-    void SetPID(short newPID);
-    short GetVID() const;
-    short GetPID() const;
+
+    int getVID() const;
+    int getPID() const;
+    int getUsagePage() const;
+    int getUsageCode() const;
 
 private:
-    short targetVID;
-    short targetPID;
-    std::string configFilename;
+    int targetVID;
+    int targetPID;
+    int usagePage;
+    int usageCode;
+    unordered_map<int, MacroAction> macrolist;
+    string configFilename;
+    libconfig::Config configuration;
 
-    bool Load(std::string filename);
+    bool Load(string filename);
     bool Save();
 };
 

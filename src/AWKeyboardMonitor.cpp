@@ -34,7 +34,7 @@
 
 using namespace std;
 
-bool StartMonitor(WORD targetVID, WORD targetPID)
+bool StartMonitor(ProgSettings* ps)
 {
     static HID_DEVICE               targetDevice;
     HANDLE                          completionEvent;
@@ -61,10 +61,10 @@ bool StartMonitor(WORD targetVID, WORD targetPID)
     for (ULONG iIndex = 0; iIndex < numberDevices; iIndex++, pDevice++)
     {
         // If currently pointed to device is our target device, copy the DevicePath into a buffer to use later
-        if (pDevice->Attributes.VendorID == targetVID &&
-            pDevice->Attributes.ProductID == targetPID &&
-            pDevice->Caps.UsagePage == AW_USAGEPAGE &&
-            pDevice->Caps.Usage == AW_USAGE)
+        if (pDevice->Attributes.VendorID == ps->getVID() &&
+            pDevice->Attributes.ProductID == ps->getPID() &&
+            pDevice->Caps.UsagePage == ps->getUsagePage() &&
+            pDevice->Caps.Usage == ps->getUsageCode())
         {
             int iDevicePathSize = static_cast<int>(strnlen(pDevice->DevicePath, MAX_PATH) + 1);
 

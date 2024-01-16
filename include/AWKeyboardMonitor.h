@@ -23,10 +23,9 @@
 
 #pragma once
 
-#include "hid.h"
-#include <minwindef.h>
+#include "ProgSettings.h"
 
-// Following are correct for Alienware m17 R4. Other machines may need other VID/PIDs. Problem for another day.
+ // Following are correct for Alienware m17 R4. Other machines may need other VID/PIDs. Problem for another day.
 #define AW_KB_VID       "0x0d62"
 #define AW_KB_PID       "0x1a1c"
 #define AW_USAGEPAGE    0x0c
@@ -39,4 +38,4 @@
 
 #define READ_THREAD_TIMEOUT     1000
 
-bool StartMonitor(WORD targetVID, WORD targetPID);
+bool StartMonitor(ProgSettings* ps);
