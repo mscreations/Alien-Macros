@@ -156,6 +156,7 @@
     <ClCompile Include="src\AWKeyboardMonitor.cpp" />
     <ClCompile Include="src\pnp.cpp" />
     <ClCompile Include="src\report.cpp" />
+    <ClCompile Include="src\Utils.cpp" />
     <ClCompile Include="src\version.cpp" />
     <ClCompile Include="src\MacroAction.cpp" />
     <ClCompile Include="src\MacroHandler.cpp" />
@@ -165,6 +166,7 @@
     <ResourceCompile Include="resources\Alien-Macros.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\version-git.h" />
     <ClInclude Include="include\version.h" />
     <ClInclude Include="include\argparse.h" />

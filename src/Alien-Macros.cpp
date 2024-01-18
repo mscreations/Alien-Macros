@@ -29,6 +29,8 @@ int main(int argc, char* argv[])
 {
     ProgSettings ps{ argc, argv };
 
+    std::cout << ps << std::endl;
+
     std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
 
     return StartMonitor(&ps);

@@ -38,14 +38,40 @@ ProgSettings::ProgSettings(int argc, char* argv[])
     if (spid != 0 && targetPID != spid) { targetPID = spid; }
 }
 
-ProgSettings::ProgSettings(string filename)
+std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
 {
-    Load(filename);
-}
+    strm << "CONFIGURATION:" << std::endl;
+    strm << std::endl << "TargetDevice:" << std::endl;
+    strm << std::format("VID:        {:#06x}\nPID:        {:#06x}\nUsagePage:  {:#04x}\nUsage:      {:#04x}",
+                   ps.targetVID, ps.targetPID, ps.usagePage, ps.usageCode) << std::endl << std::endl;
 
-ProgSettings::~ProgSettings()
-{
-    // SAVE CONFIG TO FILE
+    strm << "Macro Keys: " << ps.macrolist.size() << std::endl << std::endl;
+
+    for (const auto& macro : ps.macrolist)
+    {
+        strm << "Macro Code: 0x" << std::hex << macro.first << std::endl;
+        MacroAction action = static_cast<MacroAction>(macro.second);
+        switch (action.GetActionCode())
+        {
+            case MacroActionCode::VirtualKey:
+                strm << "Virtual Key Action" << std::endl;
+                strm << "Virtual Key Payload: " << std::left << std::setw(10) << GetKeyName(action.GetVK()) << std::endl;
+                break;
+            case MacroActionCode::Char:
+                strm << "Char Action" << std::endl;
+                strm << "Char Payload: " << action.GetChar() << std::endl;
+                break;
+            case MacroActionCode::String:
+                strm << "String Action" << std::endl;
+                strm << "String Payload: " << action.GetString() << std::endl;
+                break;
+            default:
+                strm << "Unknown/Undefined action code" << std::endl;
+                break;
+        }
+        strm << std::endl;
+    }
+    return strm;
 }
 
 void ProgSettings::CreateBlank()
@@ -55,33 +81,20 @@ void ProgSettings::CreateBlank()
     targetVID = 0x1a1c;
 }
 
-int ProgSettings::getVID() const
-{
-    return targetVID;
-}
-
-int ProgSettings::getPID() const
-{
-    return targetPID;
-}
-
-int ProgSettings::getUsagePage() const
-{
-    return usagePage;
-}
-
-int ProgSettings::getUsageCode() const
-{
-    return usageCode;
-}
+int ProgSettings::getVID() const { return targetVID; }
+int ProgSettings::getPID() const { return targetPID; }
+int ProgSettings::getUsagePage() const { return usagePage; }
+int ProgSettings::getUsageCode() const { return usageCode; }
 
 bool ProgSettings::Save()
 {
     return true;
 }
 
-bool ProgSettings::Load(string filename)
+bool ProgSettings::Load(std::string filename)
 {
+    using namespace libconfig;
+
     configFilename = filename;
 
     // Load and parse the file with libconfig
@@ -91,13 +104,13 @@ bool ProgSettings::Load(string filename)
     }
     catch (const FileIOException& fioex)
     {
-        cerr << "IO error reading file" << endl;
-        cerr << fioex.what() << endl;
+        std::cerr << "IO error reading file" << std::endl;
+        std::cerr << fioex.what() << std::endl;
         return false;
     }
     catch (const ParseException& pex)
     {
-        cerr << format("Parse error at {}:{} - {}", pex.getFile(), pex.getLine(), pex.getError()) << endl;
+        std::cerr << std::format("Parse error at {}:{} - {}", pex.getFile(), pex.getLine(), pex.getError()) << std::endl;
         return false;
     }
 
@@ -116,7 +129,7 @@ bool ProgSettings::Load(string filename)
         for (Setting& macro : macros)
         {
             int scancode{ 0 }, payloadtype{ 0 }, actioncode{ 0 }, intPayload{ 0 };
-            string stringPayload{};
+            std::string stringPayload{};
 
             macro.lookupValue(SCANCODE, scancode);
             macro.lookupValue(PAYLOAD_TYPE, payloadtype);
@@ -145,12 +158,12 @@ bool ProgSettings::Load(string filename)
     }
     catch (const SettingNotFoundException& snfe)
     {
-        cerr << format("{} - Could not load configuration information:\nMissing Path: {}", snfe.what(), snfe.getPath()) << endl;
+        std::cerr << std::format("{} - Could not load configuration information:\nMissing Path: {}", snfe.what(), snfe.getPath()) << std::endl;
         return false;
     }
     catch (const SettingTypeException& ste)
     {
-        cerr << format("{} - Invalid Type\nPath: {}", ste.what(), ste.getPath()) << endl;
+        std::cerr << std::format("{} - Invalid Type\nPath: {}", ste.what(), ste.getPath()) << std::endl;
         return false;
     }
 

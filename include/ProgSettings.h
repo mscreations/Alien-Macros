@@ -1,6 +1,7 @@
 #pragma once
 #include "libconfig.h++"
 #include "MacroAction.h"
+#include "Utils.h"
 #include <string>
 #include <unordered_map>
 
@@ -26,8 +27,8 @@ class ProgSettings
 {
 public:
     ProgSettings(int argc, char* argv[]);
-    ProgSettings(string filename);
-    ~ProgSettings();
+
+    friend std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps);
 
     void CreateBlank();
 
