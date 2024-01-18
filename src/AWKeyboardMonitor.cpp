@@ -150,7 +150,7 @@ bool StartMonitor(ProgSettings* ps)
 
     cout << "Starting monitor" << endl;
 
-    completionEvent = CreateEvent(nullptr, false, false, nullptr);
+    completionEvent = CreateEventA(nullptr, false, false, nullptr);
 
     if (completionEvent == nullptr)
     {
