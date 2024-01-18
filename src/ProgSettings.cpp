@@ -1,21 +1,8 @@
 #include "argparse.h"
 #include "ProgSettings.h"
 #include <format>
-#include <iostream>
+#include <iomanip>
 #include <regex>
-
-using namespace libconfig;
-using namespace std;
-
-ProgSettings::ProgSettings()
-{
-    // LOAD CONFIG FROM NORMAL LOCATION (WHEREVER THAT MAY END UP BEING)
-    targetPID = 0x0d62;
-    targetVID = 0x1a1c;
-    usageCode = 0x1;
-    usagePage = 0xc;
-
-}
 
 ProgSettings::ProgSettings(int argc, char* argv[])
 {

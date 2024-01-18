@@ -22,12 +22,9 @@ constexpr auto MACRO_PAYLOAD = "macropayload";
 #define AW_KB_VID       "0x0d62"
 #define AW_KB_PID       "0x1a1c"
 
-using namespace std;
-
 class ProgSettings
 {
 public:
-    ProgSettings();
     ProgSettings(int argc, char* argv[]);
     ProgSettings(string filename);
     ~ProgSettings();
@@ -44,11 +41,11 @@ private:
     int targetPID;
     int usagePage;
     int usageCode;
-    unordered_map<int, MacroAction> macrolist;
-    string configFilename;
+    std::unordered_map<int, MacroAction> macrolist;
+    std::string configFilename;
     libconfig::Config configuration;
 
-    bool Load(string filename);
+    bool Load(std::string filename);
     bool Save();
 };
 

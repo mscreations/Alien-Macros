@@ -21,10 +21,7 @@
  *
  */
 
-#include <regex>
-#include <wtypes.h>
 #include "version.h"
-#include "argparse.h"
 #include "AWKeyboardMonitor.h"
 #include "ProgSettings.h"
 

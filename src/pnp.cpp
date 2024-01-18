@@ -19,8 +19,6 @@ Environment:
 
 --*/
 
-#include <cstring>
-#include <new>
 #include <algorithm>
 #include <wtypes.h>
 #include <strsafe.h>

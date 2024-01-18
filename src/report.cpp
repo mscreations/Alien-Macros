@@ -17,9 +17,7 @@ Environment:
 
 --*/
 
-#include <stdlib.h>
 #include <wtypes.h>
-#include "hidsdi.h"
 #include "hid.h"
 
 bool Read(
