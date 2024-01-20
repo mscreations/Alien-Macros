@@ -32,8 +32,6 @@
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
 
-using namespace std;
-
 bool StartMonitor(ProgSettings* ps)
 {
     static HID_DEVICE               targetDevice;
@@ -54,7 +52,7 @@ bool StartMonitor(ProgSettings* ps)
     // Find all HID devices attached to the system.
     if (!FindKnownHidDevices(&pDevice, &numberDevices))
     {
-        cerr << "No HID devices found." << endl;
+        std::cerr << "No HID devices found." << std::endl;
         return false;
     }
 
@@ -76,7 +74,7 @@ bool StartMonitor(ProgSettings* ps)
                 wmanufacturerName = new wchar_t[256] {};
                 wproductName = new wchar_t[256] {};
             }
-            catch (const bad_alloc&)
+            catch (const std::bad_alloc&)
             {
                 return false;
             }
@@ -90,7 +88,7 @@ bool StartMonitor(ProgSettings* ps)
                     manufacturerName = new char[mnsizeRequired] {};
                     productName = new char[pnsizeRequired] {};
                 }
-                catch (const bad_alloc&)
+                catch (const std::bad_alloc&)
                 {
                     return false;
                 }
@@ -110,9 +108,9 @@ bool StartMonitor(ProgSettings* ps)
             {
                 targetDevicePath = new char[iDevicePathSize] {};
             }
-            catch (const bad_alloc&)
+            catch (const std::bad_alloc&)
             {
-                cerr << "Unable to allocate memory for device path." << endl;
+                std::cerr << "Unable to allocate memory for device path." << std::endl;
                 return false;
             }
             StringCbCopyA(targetDevicePath, iDevicePathSize, pDevice->DevicePath);
@@ -125,13 +123,13 @@ bool StartMonitor(ProgSettings* ps)
 
     if (targetDevicePath == nullptr)
     {
-        cerr << "Target device could not be located!" << endl;
+        std::cerr << "Target device could not be located!" << std::endl;
         return false;
     }
 
 #ifdef _DEBUG
-    cout << format("\nTarget Device located:\n{} {}\nVID:        {:#06x}\nPID:        {:#06x}\nUsagePage:  {:#04x}\nUsage:      {:#04x}\n",
-                   manufacturerName, productName, vid, pid, usagepage, usagecode) << endl;
+    std::cout << std::format("\nTarget Device located:\n{} {}\nVID:        {:#06x}\nPID:        {:#06x}\nUsagePage:  {:#04x}\nUsage:      {:#04x}\n",
+                   manufacturerName, productName, vid, pid, usagepage, usagecode) << std::endl;
 #endif
 
     delete[] manufacturerName;          // no longer needed. Can be deleted.
@@ -144,11 +142,11 @@ bool StartMonitor(ProgSettings* ps)
 
     if (!openForAsync)
     {
-        cerr << "Unable to open target HID device for async read" << endl;
+        std::cerr << "Unable to open target HID device for async read" << std::endl;
         return false;
     }
 
-    cout << "Starting monitor" << endl;
+    std::cout << "Starting monitor" << std::endl;
 
     completionEvent = CreateEventA(nullptr, false, false, nullptr);
 
@@ -191,7 +189,7 @@ bool StartMonitor(ProgSettings* ps)
         if (usage >= MACROA && usage <= MACROD)
         {
 #ifdef _DEBUG
-            cout << "Read key: 0x" << hex << usage << " Macro " << static_cast<char>(usage - 0xb) << endl;
+            std::cout << "Read key: 0x" << std::hex << usage << " Macro " << static_cast<char>(usage - 0xb) << std::endl;
 #endif
             mh.Process(usage);
         }
