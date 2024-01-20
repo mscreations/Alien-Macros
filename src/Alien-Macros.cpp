@@ -24,14 +24,27 @@
 #include "version.h"
 #include "AWKeyboardMonitor.h"
 #include "ProgSettings.h"
+#include "HidDevice.h"
 
 int main(int argc, char* argv[])
 {
-    ProgSettings ps{ argc, argv };
 
-    std::cout << ps << std::endl;
+    if (false)
+    {
+        ProgSettings ps{ argc, argv };
 
-    std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
+        std::cout << ps << std::endl;
 
-    return StartMonitor(&ps);
+        std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
+
+        return StartMonitor(&ps);
+
+    }
+    else
+    {
+        HidDevices devices{};
+        devices.FindAllHidDevices();
+
+        ProgSettings ps{ argc, argv };
+    }
 }
