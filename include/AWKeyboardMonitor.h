@@ -1,5 +1,5 @@
 /*
- *  Alien-Macro
+ *  Alien-Macros
  *  Receives Macro keypresses and translates to a keycode that AutoHotKey can understand.
  *  Copyright (C) 2023 mscreations
  *
@@ -16,10 +16,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
- *  CURRENT STATUS: Proof of Concept. Still needs a lot of refinement and should not be used
- *      in normal day to day use.
- *
  */
+
 
 #pragma once
 
