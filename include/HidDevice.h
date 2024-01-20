@@ -22,7 +22,9 @@
 
 #include <memory>
 #include <string>
+#include <iostream>
 #include <vector>
+#include <format>
 #include <Windows.h>
 #include <hidsdi.h>
 #include <SetupAPI.h>
@@ -46,7 +48,7 @@ typedef struct _HID_DATA
             ULONG                   UsageMin;       // Variables to track the usage minimum and max
             ULONG                   UsageMax;       // If equal, then only a single usage
             ULONG                   MaxUsageLength; // Usages buffer length.
-            //std::vector<USAGE>      Usages;         // list of usages (buttons ``down'' on the device.
+            std::vector<USAGE>      Usages;         // list of usages (buttons ``down'' on the device.
 
         } ButtonData;
         struct
@@ -58,6 +60,23 @@ typedef struct _HID_DATA
             LONG        ScaledValue;
         } ValueData;
     };
+
+    _HID_DATA()
+        : IsButtonData(false), Reserved(0), UsagePage(0), Status(0), ReportID(0), IsDataSet(false)
+    {
+        if (IsButtonData)
+        {
+            ButtonData.Usages = std::vector<USAGE>();
+        }
+    }
+
+    ~_HID_DATA()
+    {
+        if (IsButtonData)
+        {
+            ButtonData.Usages.clear();
+        }
+    }
 } HID_DATA;
 
 class HidDevice
@@ -108,6 +127,8 @@ public:
     bool Write();
     bool Open(bool HasReadAccess = false, bool HasWriteAccess = false, bool IsOverlapped = false, bool IsExclusive = false);
     bool FillDevice();
+
+    friend std::ostream& operator<<(std::ostream& strm, const HidDevice& hd);
 };
 
 using HidDevicePtr = std::unique_ptr<HidDevice>;
@@ -119,4 +140,6 @@ class HidDevices
 public:
     HidDevices();
     bool FindAllHidDevices();
+
+    friend std::ostream& operator<<(std::ostream& strm, const HidDevices& hds);
 };

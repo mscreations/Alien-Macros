@@ -543,3 +543,24 @@ bool HidDevices::FindAllHidDevices()
 
     return false;
 }
+
+std::ostream& operator<<(std::ostream& strm, const HidDevice& hd)
+{
+
+    strm << std::format("{:<50} VID: {:#06x} PID: {:#06x} UsagePage: {:#04x}, Usage: {:#04x}\n",
+                        hd.ManufacturerString.empty() ? "Unknown USB HID Device" : hd.ManufacturerString + " " + hd.ProductString,
+                        hd.Attributes->VendorID,
+                        hd.Attributes->ProductID,
+                        hd.Caps->UsagePage,
+                        hd.Caps->Usage);
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const HidDevices& hds)
+{
+    for (auto& hd : hds.devices)
+    {
+        strm << *(hd.get());
+    }
+    return strm;
+}
