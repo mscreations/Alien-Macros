@@ -148,8 +148,7 @@ bool ProgSettings::Load(std::string filename)
 
         for (Setting& macro : macros)
         {
-            int scancode{ 0 }, payloadtype{ 0 }, actioncode{ 0 }, intPayload{ 0 };
-            std::string stringPayload{};
+            int scancode{ 0 }, payloadtype{ 0 }, actioncode{ 0 };
 
             macro.lookupValue(SCANCODE, scancode);
             macro.lookupValue(PAYLOAD_TYPE, payloadtype);
@@ -157,11 +156,13 @@ bool ProgSettings::Load(std::string filename)
 
             if (payloadtype == Setting::TypeString)
             {
+                std::string stringPayload{};
                 macro.lookupValue(MACRO_PAYLOAD, stringPayload);
                 macrolist[scancode] = MacroAction(stringPayload);
             }
             else if (payloadtype == Setting::TypeInt)
             {
+                int intPayload{ 0 };
                 macro.lookupValue(MACRO_PAYLOAD, intPayload);
 
                 switch (static_cast<MacroActionCode>(actioncode))
