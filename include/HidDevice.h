@@ -96,6 +96,8 @@ class HidDevice
     bool UnpackReport();
     bool PackReport();
 
+    static void SetHidData(std::unique_ptr<HID_DATA[]>& ptr, unsigned long offset, USAGE up, USAGE usage, unsigned long rid);
+
 public:
     HidDevice(std::string DevicePath);
     ~HidDevice();

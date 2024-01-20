@@ -30,6 +30,15 @@ bool HidDevice::PackReport()
     return false;
 }
 
+void HidDevice::SetHidData(std::unique_ptr<HID_DATA[]>& ptr, unsigned long offset, USAGE up, USAGE usage, unsigned long rid)
+{
+    (ptr.get()[offset]).IsButtonData = false;
+    (ptr.get()[offset]).Status = HIDP_STATUS_SUCCESS;
+    (ptr.get()[offset]).UsagePage = up;
+    (ptr.get()[offset]).ValueData.Usage = usage;
+    (ptr.get()[offset]).ReportID = rid;
+}
+
 HidDevice::HidDevice(std::string DevicePath)
 {
     this->DevicePath = DevicePath;
@@ -250,28 +259,15 @@ bool HidDevice::FillDevice()
                  usage <= (InputValueCaps.get()[i]).Range.UsageMax;
                  usage++)
             {
-                if (dataIdx >= (InputDataLength))
-                {
-                    return false;
-                }
-                (InputData.get()[dataIdx]).IsButtonData = false;
-                (InputData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-                (InputData.get()[dataIdx]).UsagePage = (InputValueCaps.get()[i]).UsagePage;
-                (InputData.get()[dataIdx]).ValueData.Usage = usage;
-                (InputData.get()[dataIdx]).ReportID = (InputValueCaps.get()[i]).ReportID;
+                if (dataIdx >= (InputDataLength)) { return false; }
+                HidDevice::SetHidData(InputData, dataIdx, (InputValueCaps.get()[i]).UsagePage,
+                                      usage, (InputValueCaps.get()[i]).ReportID);
             }
         }
         else
         {
-            if (dataIdx >= (InputDataLength))
-            {
-                return false;
-            }
-            (InputData.get()[dataIdx]).IsButtonData = false;
-            (InputData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-            (InputData.get()[dataIdx]).UsagePage = (InputValueCaps.get()[i]).UsagePage;
-            (InputData.get()[dataIdx]).ValueData.Usage = (InputValueCaps.get()[i]).NotRange.Usage;
-            (InputData.get()[dataIdx]).ReportID = (InputValueCaps.get()[i]).ReportID;
+            HidDevice::SetHidData(InputData, dataIdx, (InputValueCaps.get()[i]).UsagePage,
+                                  (InputValueCaps.get()[i]).NotRange.Usage, (InputValueCaps.get()[i]).ReportID);
         }
     }
 
@@ -362,20 +358,14 @@ bool HidDevice::FillDevice()
                  usage <= (OutputValueCaps.get()[i]).Range.UsageMax;
                  usage++)
             {
-                (OutputData.get()[dataIdx]).IsButtonData = false;
-                (OutputData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-                (OutputData.get()[dataIdx]).UsagePage = (OutputValueCaps.get()[i]).UsagePage;
-                (OutputData.get()[dataIdx]).ValueData.Usage = usage;
-                (OutputData.get()[dataIdx]).ReportID = (OutputValueCaps.get()[i]).ReportID;
+                HidDevice::SetHidData(OutputData, dataIdx, (OutputValueCaps.get()[i]).UsagePage,
+                                      usage, (OutputValueCaps.get()[i]).ReportID);
             }
         }
         else
         {
-            (OutputData.get()[dataIdx]).IsButtonData = false;
-            (OutputData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-            (OutputData.get()[dataIdx]).UsagePage = (OutputValueCaps.get()[i]).UsagePage;
-            (OutputData.get()[dataIdx]).ValueData.Usage = (OutputValueCaps.get()[i]).NotRange.Usage;
-            (OutputData.get()[dataIdx]).ReportID = (OutputValueCaps.get()[i]).ReportID;
+            HidDevice::SetHidData(OutputData, dataIdx, (OutputValueCaps.get()[i]).UsagePage,
+                                  (OutputValueCaps.get()[i]).NotRange.Usage, (OutputValueCaps.get()[i]).ReportID);
         }
     }
 
@@ -457,21 +447,15 @@ bool HidDevice::FillDevice()
                  usage++)
             {
                 if (dataIdx >= FeatureDataLength) { return false; }
-                (FeatureData.get()[dataIdx]).IsButtonData = false;
-                (FeatureData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-                (FeatureData.get()[dataIdx]).UsagePage = (FeatureValueCaps.get()[i]).UsagePage;
-                (FeatureData.get()[dataIdx]).ValueData.Usage = usage;
-                (FeatureData.get()[dataIdx]).ReportID = (FeatureValueCaps.get()[i]).ReportID;
+                HidDevice::SetHidData(FeatureData, dataIdx, (FeatureValueCaps.get()[i]).UsagePage,
+                                      usage, (FeatureValueCaps.get()[i]).ReportID);
             }
         }
         else
         {
             if (dataIdx >= FeatureDataLength) { return false; }
-            (FeatureData.get()[dataIdx]).IsButtonData = false;
-            (FeatureData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-            (FeatureData.get()[dataIdx]).UsagePage = (FeatureValueCaps.get()[i]).UsagePage;
-            (FeatureData.get()[dataIdx]).ValueData.Usage = (FeatureValueCaps.get()[i]).NotRange.Usage;
-            (FeatureData.get()[dataIdx]).ReportID = (FeatureValueCaps.get()[i]).ReportID;
+            HidDevice::SetHidData(FeatureData, dataIdx, (FeatureValueCaps.get()[i]).UsagePage,
+                                  (FeatureValueCaps.get()[i]).NotRange.Usage, (FeatureValueCaps.get()[i]).ReportID);
         }
     }
 
