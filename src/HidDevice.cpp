@@ -302,7 +302,7 @@ bool HidDevice::FillDevice()
 
     for (int i = 0; i < Caps->NumberInputValueCaps; i++)
     {
-        auto& ivcPtr = (InputValueCaps.get())[i];
+        auto& ivcPtr = InputValueCaps[i];
 
         if (ivcPtr.IsRange)
         {
@@ -328,8 +328,8 @@ bool HidDevice::FillDevice()
     unsigned long dataIdx{ 0 };
     for (int i = 0; i < Caps->NumberInputButtonCaps; i++, dataIdx++)
     {
-        auto& idPtr = (InputData.get())[dataIdx];
-        auto& ibcPtr = (InputButtonCaps.get()[dataIdx]);
+        auto& idPtr = InputData[dataIdx];
+        auto& ibcPtr = InputButtonCaps[dataIdx];
 
         idPtr.IsButtonData = true;
         idPtr.Status = HIDP_STATUS_SUCCESS;
@@ -365,7 +365,7 @@ bool HidDevice::FillDevice()
 
     for (int i = 0; i < Caps->NumberInputValueCaps; i++)
     {
-        auto& ivcPtr = (InputValueCaps.get()[i]);
+        auto& ivcPtr = InputValueCaps[i];
 
         if (ivcPtr.IsRange)
         {
@@ -389,9 +389,9 @@ bool HidDevice::FillDevice()
     OutputReportBuffer = std::make_unique<char[]>(Caps->OutputReportByteLength);
 
     numCaps = Caps->NumberOutputButtonCaps;
-    OutputButtonCaps = std::make_unique<HIDP_BUTTON_CAPS[]>(numCaps);
     if (numCaps > 0)
     {
+        OutputButtonCaps = std::make_unique<HIDP_BUTTON_CAPS[]>(numCaps);
         if (HIDP_STATUS_SUCCESS != (HidP_GetButtonCaps(HidP_Output,
                                                        OutputButtonCaps.get(),
                                                        &numCaps,
@@ -402,9 +402,9 @@ bool HidDevice::FillDevice()
     }
 
     numCaps = Caps->NumberOutputValueCaps;
-    OutputValueCaps = std::make_unique<HIDP_VALUE_CAPS[]>(numCaps);
     if (numCaps > 0)
     {
+        OutputValueCaps = std::make_unique<HIDP_VALUE_CAPS[]>(numCaps);
         if (HIDP_STATUS_SUCCESS != (HidP_GetValueCaps(HidP_Output,
                                                       OutputValueCaps.get(),
                                                       &numCaps,
@@ -417,7 +417,7 @@ bool HidDevice::FillDevice()
     numValues = 0;
     for (int i = 0; i < Caps->NumberOutputValueCaps; i++)
     {
-        auto& ovcPtr = (OutputValueCaps.get()[i]);
+        auto& ovcPtr = OutputValueCaps[i];
 
         if (ovcPtr.IsRange)
         {
@@ -435,20 +435,12 @@ bool HidDevice::FillDevice()
     OutputData = std::make_unique<HID_DATA[]>(OutputDataLength);
 
     dataIdx = 0;
-    for (unsigned long i = 0; i < Caps->NumberOutputButtonCaps; i++)
+    for (unsigned long i = 0; i < Caps->NumberOutputButtonCaps; i++, dataIdx++)
     {
-        unsigned long tmpSum{ 0 };
-        auto& odPtr = (OutputData.get()[dataIdx]);
-        auto& obcPtr = (OutputButtonCaps.get()[dataIdx]);
-        auto& ovcPtr = (OutputValueCaps.get()[dataIdx]);
+        auto& odPtr = OutputData[dataIdx];
+        auto& obcPtr = OutputButtonCaps[dataIdx];
 
         if (i >= OutputDataLength) { return false; }
-
-        // ULongAdd requires intsafe.h. 
-        // TODO: According to AddressSanitizer this is messing with unallocated memory. Need to look into this more.
-        if (FAILED(ULongAdd(Caps->NumberOutputButtonCaps, ovcPtr.Range.UsageMax, &tmpSum))) { return false; }
-
-        if (ovcPtr.Range.UsageMin == tmpSum) { return false; }
 
         odPtr.IsButtonData = true;
         odPtr.Status = HIDP_STATUS_SUCCESS;
@@ -538,15 +530,18 @@ bool HidDevice::FillDevice()
         }
     }
 
-    if (FAILED(ULongAdd(Caps->NumberFeatureButtonCaps, numValues, &FeatureDataLength))) { return false; }
+    FeatureDataLength = Caps->NumberFeatureButtonCaps + numValues;
 
-    FeatureData = std::make_unique<HID_DATA[]>(FeatureDataLength);
+    if (FeatureDataLength > 0)
+    {
+        FeatureData = std::make_unique<HID_DATA[]>(FeatureDataLength);
+    }
 
     dataIdx = 0;
-    for (int i = 0; i < Caps->NumberFeatureButtonCaps; i++, dataIdx++)
+    for (int i = 0; i < Caps->NumberFeatureButtonCaps && FeatureData; i++, dataIdx++)
     {
-        auto& fdPtr = (FeatureData.get())[dataIdx];
-        auto& fbcPtr = (FeatureButtonCaps.get())[i];
+        auto& fdPtr = FeatureData[dataIdx];
+        auto& fbcPtr = FeatureButtonCaps[i];
 
         fdPtr.IsButtonData = true;
         fdPtr.Status = HIDP_STATUS_SUCCESS;

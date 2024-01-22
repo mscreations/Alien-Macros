@@ -29,7 +29,6 @@
 #include <Windows.h>
 #include <hidsdi.h>
 #include <SetupAPI.h>
-#include <intsafe.h>
 
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
