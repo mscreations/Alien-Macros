@@ -49,6 +49,8 @@ void MacroHandler::Process(USAGE macroKey)
         case MacroActionCode::String:
             Send(action.GetString());
             break;
+        default:
+            break;
     }
 }
 

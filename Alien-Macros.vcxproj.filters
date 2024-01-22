@@ -18,15 +18,6 @@
     <ClCompile Include="src\Alien-Macros.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\AWKeyboardMonitor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\pnp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\report.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\MacroAction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -53,12 +44,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\argparse.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\AWKeyboardMonitor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\hid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\version.h">

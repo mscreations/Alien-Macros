@@ -18,30 +18,44 @@
  *
  */
 
+#include <iostream>
 #include "version.h"
-#include "AWKeyboardMonitor.h"
 #include "ProgSettings.h"
 #include "HidDevice.h"
+#include "MacroHandler.h"
 
 int main(int argc, char* argv[])
 {
 
-    if (false)
+    ProgSettings ps{ argc, argv };
+
+    std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
+
+#ifdef _DEBUG
+    std::cout << ps << std::endl;
+#endif
+
+    HidDevices devices{};
+    devices.FindAllHidDevices();
+
+    MacroHandler mh{};
+
+    std::vector<HidDevicePtr>& list = devices.getDevices();
+
+    for (auto& dev : list)
     {
-        ProgSettings ps{ argc, argv };
+        if (dev->IsTarget(ps.getVID(), ps.getPID(), ps.getUsagePage(), ps.getUsageCode()))
+        {
+            std::cout << "Found target device: \n" << *(dev.get()) << std::endl;
+            while (true)
+            {
+                dev.get()->Open(true);      // Open with Read Access. All other parameters default false.
+                dev.get()->Read();
 
-        std::cout << ps << std::endl;
+                std::cout << "Read: " << std::hex << dev.get()->getKeyPress() << std::endl;
 
-        std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
-
-        return StartMonitor(&ps);
-
-    }
-    else
-    {
-        HidDevices devices{};
-        devices.FindAllHidDevices();
-
-        ProgSettings ps{ argc, argv };
+                mh.Process(dev.get()->getKeyPress());
+            }
+        }
     }
 }

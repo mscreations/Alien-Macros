@@ -153,10 +153,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Alien-Macros.cpp" />
-    <ClCompile Include="src\AWKeyboardMonitor.cpp" />
     <ClCompile Include="src\HidDevice.cpp" />
-    <ClCompile Include="src\pnp.cpp" />
-    <ClCompile Include="src\report.cpp" />
     <ClCompile Include="src\Utils.cpp" />
     <ClCompile Include="src\version.cpp" />
     <ClCompile Include="src\MacroAction.cpp" />
@@ -172,8 +169,6 @@
     <ClInclude Include="include\version-git.h" />
     <ClInclude Include="include\version.h" />
     <ClInclude Include="include\argparse.h" />
-    <ClInclude Include="include\AWKeyboardMonitor.h" />
-    <ClInclude Include="include\hid.h" />
     <ClInclude Include="resources\resource.h" />
     <ClInclude Include="include\ProgSettings.h" />
     <ClInclude Include="include\MacroAction.h" />

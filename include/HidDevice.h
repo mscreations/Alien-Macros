@@ -25,56 +25,59 @@
 #include <iostream>
 #include <vector>
 #include <format>
+#include <functional>
 #include <Windows.h>
 #include <hidsdi.h>
 #include <SetupAPI.h>
 #include <intsafe.h>
 
+#pragma comment(lib, "hid.lib")
+#pragma comment(lib, "setupapi.lib")
+
 typedef struct _HID_DATA
 {
-    bool        IsButtonData;
-    UCHAR       Reserved;
-    USAGE       UsagePage;   // The usage page for which we are looking.
-    ULONG       Status;      // The last status returned from the accessor function
-    // when updating this field.
-    ULONG       ReportID;    // ReportID for this given data structure
-    bool        IsDataSet;   // Variable to track whether a given data structure
+    bool                                IsButtonData;
+    UCHAR                               Reserved;
+    USAGE                               UsagePage;      // The usage page for which we are looking.
+    ULONG                               Status;         // The last status returned from the accessor function
+    ULONG                               ReportID;       // ReportID for this given data structure
+    bool                                IsDataSet;      // Variable to track whether a given data structure
     //  has already been added to a report structure
 
     union
     {
         struct
         {
-            ULONG                   UsageMin;       // Variables to track the usage minimum and max
-            ULONG                   UsageMax;       // If equal, then only a single usage
-            ULONG                   MaxUsageLength; // Usages buffer length.
-            std::vector<USAGE>      Usages;         // list of usages (buttons ``down'' on the device.
-
+            ULONG                       UsageMin;       // Variables to track the usage minimum and max
+            ULONG                       UsageMax;       // If equal, then only a single usage
+            ULONG                       MaxUsageLength; // Usages buffer length.
+            PUSAGE                      Usages;         // list of usages (buttons ``down'' on the device.
         } ButtonData;
         struct
         {
-            USAGE       Usage;          // The usage describing this value
-            USHORT      Reserved;
-
-            ULONG       Value;
-            LONG        ScaledValue;
+            USAGE                       Usage;          // The usage describing this value
+            USHORT                      Reserved;
+            ULONG                       Value;
+            LONG                        ScaledValue;
         } ValueData;
     };
 
     _HID_DATA()
         : IsButtonData(false), Reserved(0), UsagePage(0), Status(0), ReportID(0), IsDataSet(false)
     {
-        if (IsButtonData)
-        {
-            ButtonData.Usages = std::vector<USAGE>();
-        }
+        ButtonData.UsageMin = ButtonData.UsageMax = ButtonData.MaxUsageLength = 0;
+        ButtonData.Usages = nullptr;
+        ValueData.Usage = 0;
+        ValueData.Value = 0;
+        ValueData.Reserved = 0;
+        ValueData.ScaledValue = 0;
     }
 
     ~_HID_DATA()
     {
-        if (IsButtonData)
+        if (ButtonData.Usages != nullptr)
         {
-            ButtonData.Usages.clear();
+            delete[] ButtonData.Usages;
         }
     }
 } HID_DATA;
@@ -112,21 +115,31 @@ class HidDevice
     std::unique_ptr<HIDP_BUTTON_CAPS[]>     FeatureButtonCaps{};
     std::unique_ptr<HIDP_VALUE_CAPS[]>      FeatureValueCaps{};
 
-    bool UnpackReport();
-    bool PackReport();
+
+    std::string LoadHidString(std::function<BOOLEAN(HANDLE, PVOID, ULONG)>) const;
 
     static void SetHidData(std::unique_ptr<HID_DATA[]>& ptr, unsigned long offset, USAGE up, USAGE usage, unsigned long rid);
+
+    static bool UnpackReport(std::unique_ptr<char[]>& ReportBuffer,
+                             unsigned short ReportBufferLength,
+                             HIDP_REPORT_TYPE ReportType,
+                             std::unique_ptr<HID_DATA[]>& Data,
+                             unsigned long DataLength,
+                             std::unique_ptr<PHIDP_PREPARSED_DATA>& Ppd);
+    static bool PackReport();
 
 public:
     HidDevice(std::string DevicePath);
     ~HidDevice();
-    bool IsOpen();
+    bool IsOpen() const;
     void Close();
     bool Read();
     bool ReadOverlapped();
     bool Write();
     bool Open(bool HasReadAccess = false, bool HasWriteAccess = false, bool IsOverlapped = false, bool IsExclusive = false);
     bool FillDevice();
+    bool IsTarget(int vid, int pid, int usagepage, int usagecode);
+    USAGE getKeyPress();
 
     friend std::ostream& operator<<(std::ostream& strm, const HidDevice& hd);
 };
@@ -140,6 +153,8 @@ class HidDevices
 public:
     HidDevices();
     bool FindAllHidDevices();
+    std::vector<HidDevicePtr>& getDevices();
+    const std::vector<HidDevicePtr>& getDevices() const;
 
     friend std::ostream& operator<<(std::ostream& strm, const HidDevices& hds);
 };

@@ -20,14 +20,115 @@
 
 #include "HidDevice.h"
 
-bool HidDevice::UnpackReport()
+bool HidDevice::UnpackReport(std::unique_ptr<char[]>& ReportBuffer,
+                             unsigned short ReportBufferLength,
+                             HIDP_REPORT_TYPE ReportType,
+                             std::unique_ptr<HID_DATA[]>& Data,
+                             unsigned long DataLength,
+                             std::unique_ptr<PHIDP_PREPARSED_DATA>& Ppd)
 {
-    return false;
+    unsigned char reportId = ReportBuffer.get()[0];
+
+    for (unsigned long i = 0; i < DataLength; i++)
+    {
+        auto& dtaPtr = (Data.get()[i]);
+
+        if (reportId == dtaPtr.ReportID)
+        {
+            if (dtaPtr.IsButtonData)
+            {
+                unsigned long numUsages = dtaPtr.ButtonData.MaxUsageLength;
+
+                dtaPtr.Status = HidP_GetUsages(ReportType,
+                                               dtaPtr.UsagePage,
+                                               0,
+                                               dtaPtr.ButtonData.Usages,
+                                               &numUsages,
+                                               *(Ppd.get()),
+                                               ReportBuffer.get(),
+                                               ReportBufferLength);
+
+                if (dtaPtr.Status != HIDP_STATUS_SUCCESS) { return false; }
+
+                // Search through the usage list and remove those that
+                //    correspond to usages outside the define ranged for this
+                //    data structure.
+                unsigned long nextUsage{ 0 };
+                for (unsigned long j = 0; j < numUsages; j++)
+                {
+                    if (dtaPtr.ButtonData.UsageMin <= dtaPtr.ButtonData.Usages[j] &&
+                        dtaPtr.ButtonData.Usages[j] <= dtaPtr.ButtonData.UsageMax)
+                    {
+                        dtaPtr.ButtonData.Usages[nextUsage++] = dtaPtr.ButtonData.Usages[j];
+                    }
+                }
+                if (nextUsage < dtaPtr.ButtonData.MaxUsageLength)
+                {
+                    dtaPtr.ButtonData.Usages[nextUsage] = 0;
+                }
+            }
+            else
+            {
+                dtaPtr.Status = HidP_GetUsageValue(ReportType,
+                                                   dtaPtr.UsagePage,
+                                                   0,
+                                                   dtaPtr.ValueData.Usage,
+                                                   &dtaPtr.ValueData.Value,
+                                                   *(Ppd.get()),
+                                                   ReportBuffer.get(),
+                                                   ReportBufferLength);
+                if (dtaPtr.Status != HIDP_STATUS_SUCCESS) { return false; }
+
+                dtaPtr.Status = HidP_GetScaledUsageValue(ReportType,
+                                                         dtaPtr.UsagePage,
+                                                         0,
+                                                         dtaPtr.ValueData.Usage,
+                                                         &dtaPtr.ValueData.ScaledValue,
+                                                         *(Ppd.get()),
+                                                         ReportBuffer.get(),
+                                                         ReportBufferLength);
+                if (dtaPtr.Status != HIDP_STATUS_SUCCESS &&
+                    dtaPtr.Status != HIDP_STATUS_NULL)
+                {
+                    return false;
+                }
+            }
+            dtaPtr.IsDataSet = true;
+        }
+    }
+
+    return true;
 }
 
 bool HidDevice::PackReport()
 {
     return false;
+}
+
+bool HidDevice::IsTarget(int vid, int pid, int usagepage, int usagecode)
+{
+    return Attributes->VendorID == vid &&
+        Attributes->ProductID == pid &&
+        Caps->UsagePage == usagepage &&
+        Caps->Usage == usagecode;
+}
+
+USAGE HidDevice::getKeyPress()
+{
+    return *(InputData.get())->ButtonData.Usages;
+}
+
+std::string HidDevice::LoadHidString(std::function<BOOLEAN(HANDLE, PVOID, ULONG)> func) const
+{
+    auto wideString = std::make_unique<wchar_t[]>(256);
+    if (func(device, wideString.get(), 256))
+    {
+        int sizeRequired = WideCharToMultiByte(CP_UTF8, 0, wideString.get(), -1, nullptr, 0, NULL, NULL);
+        auto charString = std::make_unique<char[]>(sizeRequired);
+        WideCharToMultiByte(CP_UTF8, 0, wideString.get(), -1, charString.get(), sizeRequired, NULL, NULL);
+        return std::string(charString.get());
+    }
+    return std::string();
 }
 
 void HidDevice::SetHidData(std::unique_ptr<HID_DATA[]>& ptr, unsigned long offset, USAGE up, USAGE usage, unsigned long rid)
@@ -50,6 +151,11 @@ HidDevice::HidDevice(std::string DevicePath)
 
 HidDevice::~HidDevice()
 {
+    Close();
+}
+
+void HidDevice::Close()
+{
     if (IsOpen())
     {
         CloseHandle(device);
@@ -57,18 +163,31 @@ HidDevice::~HidDevice()
     }
 }
 
-void HidDevice::Close()
-{
-}
-
-bool HidDevice::IsOpen()
+bool HidDevice::IsOpen() const
 {
     return device != INVALID_HANDLE_VALUE;
 }
 
 bool HidDevice::Read()
 {
-    return false;
+    unsigned long bytesRead;
+
+    if (!ReadFile(device,
+                  InputReportBuffer.get(),
+                  Caps->InputReportByteLength,
+                  &bytesRead,
+                  NULL))
+    {
+        return false;
+    }
+    if (bytesRead != Caps->InputReportByteLength) { return false; }
+
+    return UnpackReport(InputReportBuffer,
+                        Caps->InputReportByteLength,
+                        HidP_Input,
+                        InputData,
+                        InputDataLength,
+                        Ppd);
 }
 
 bool HidDevice::ReadOverlapped()
@@ -83,6 +202,9 @@ bool HidDevice::Write()
 
 bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped, bool IsExclusive)
 {
+    // If HidDevice is already open (likely with other permissions), close it first.
+    if (IsOpen()) { Close(); }
+
     unsigned long accessFlags{ 0 }, sharingFlags{ 0 };
 
     if (DevicePath.empty()) { return false; }
@@ -124,7 +246,7 @@ bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped,
     {
         return false;
     }
-    return false;
+    return true;
 }
 
 bool HidDevice::FillDevice()
@@ -132,34 +254,12 @@ bool HidDevice::FillDevice()
     unsigned short numCaps{ 0 };
     unsigned long numValues{ 0 };
 
-    // Load Manufacturer String
-    {
-        auto wMFString = std::make_unique<wchar_t[]>(256);
-        if (HidD_GetManufacturerString(device, wMFString.get(), 256))
-        {
-            int sizeRequired = WideCharToMultiByte(CP_UTF8, 0, wMFString.get(), -1, nullptr, 0, NULL, NULL);
-            auto charMFString = std::make_unique<char[]>(sizeRequired);
-            WideCharToMultiByte(CP_UTF8, 0, wMFString.get(), -1, charMFString.get(), sizeRequired, NULL, NULL);
-            ManufacturerString = std::string(charMFString.get());
-        }
-    }
-    // Load Product String
-    {
-        auto wPString = std::make_unique<wchar_t[]>(256);
-        if (HidD_GetProductString(device, wPString.get(), 256))
-        {
-            int sizeRequired = WideCharToMultiByte(CP_UTF8, 0, wPString.get(), -1, nullptr, 0, NULL, NULL);
-            auto charPString = std::make_unique<char[]>(sizeRequired);
-            WideCharToMultiByte(CP_UTF8, 0, wPString.get(), -1, charPString.get(), sizeRequired, NULL, NULL);
-            ProductString = std::string(charPString.get());
-        }
-    }
+    // Load Manufacturer and Product String
+    ManufacturerString = LoadHidString(HidD_GetManufacturerString);
+    ProductString = LoadHidString(HidD_GetProductString);
 
     // Allocate memory for input report
-    if (Caps->InputReportByteLength > 0)
-    {
-        InputReportBuffer = std::make_unique<char[]>(Caps->InputReportByteLength);
-    }
+    InputReportBuffer = std::make_unique<char[]>(Caps->InputReportByteLength);
 
     // Have the HidP_X functions fill in the capability structure arrays
     numCaps = Caps->NumberInputButtonCaps;
@@ -202,13 +302,12 @@ bool HidDevice::FillDevice()
 
     for (int i = 0; i < Caps->NumberInputValueCaps; i++)
     {
-        if ((InputValueCaps.get()[i]).IsRange)
+        auto& ivcPtr = (InputValueCaps.get())[i];
+
+        if (ivcPtr.IsRange)
         {
-            numValues += (InputValueCaps.get()[i]).Range.UsageMax - (InputValueCaps.get()[i]).Range.UsageMin + 1;
-            if ((InputValueCaps.get()[i]).Range.UsageMin > (InputValueCaps.get()[i]).Range.UsageMax)
-            {
-                return false;
-            }
+            numValues += ivcPtr.Range.UsageMax - ivcPtr.Range.UsageMin + 1;
+            if (ivcPtr.Range.UsageMin > ivcPtr.Range.UsageMax) { return false; }
         }
         else
         {
@@ -229,50 +328,64 @@ bool HidDevice::FillDevice()
     unsigned long dataIdx{ 0 };
     for (int i = 0; i < Caps->NumberInputButtonCaps; i++, dataIdx++)
     {
-        (InputData.get()[dataIdx]).IsButtonData = true;
-        (InputData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-        (InputData.get()[dataIdx]).UsagePage = (InputButtonCaps.get()[dataIdx]).UsagePage;
-        if ((InputButtonCaps.get()[dataIdx]).IsRange)
+        auto& idPtr = (InputData.get())[dataIdx];
+        auto& ibcPtr = (InputButtonCaps.get()[dataIdx]);
+
+        idPtr.IsButtonData = true;
+        idPtr.Status = HIDP_STATUS_SUCCESS;
+        idPtr.UsagePage = ibcPtr.UsagePage;
+        if (ibcPtr.IsRange)
         {
-            (InputData.get()[dataIdx]).ButtonData.UsageMin = (InputButtonCaps.get()[dataIdx]).Range.UsageMin;
-            (InputData.get()[dataIdx]).ButtonData.UsageMax = (InputButtonCaps.get()[dataIdx]).Range.UsageMax;
+            idPtr.ButtonData.UsageMin = ibcPtr.Range.UsageMin;
+            idPtr.ButtonData.UsageMax = ibcPtr.Range.UsageMax;
         }
         else
         {
-            (InputData.get()[dataIdx]).ButtonData.UsageMin = (InputData.get()[dataIdx]).ButtonData.UsageMax = (InputButtonCaps.get()[dataIdx]).NotRange.Usage;
+            idPtr.ButtonData.UsageMin = idPtr.ButtonData.UsageMax = ibcPtr.NotRange.Usage;
         }
 
-        (InputData.get()[dataIdx]).ButtonData.MaxUsageLength = HidP_MaxUsageListLength(HidP_Input,
-                                                                                 (InputButtonCaps.get()[dataIdx]).UsagePage,
-                                                                                 *Ppd.get());
+        idPtr.ButtonData.MaxUsageLength = HidP_MaxUsageListLength(HidP_Input,
+                                                                  ibcPtr.UsagePage,
+                                                                  *Ppd.get());
 
-        (InputData.get()[dataIdx]).ReportID = (InputButtonCaps.get()[dataIdx]).ReportID;
+        // TODO I would prefer this to utilize unique_ptr, however, when trying to allocate the new smart pointer
+        // from within HID_DATA, an exception keeps being thrown from the program trying to deallocate the already
+        // empty pointer. Not sure what to do to fix that. For the time being, use a raw pointer for this. The raw 
+        // pointer is freed by the deconstructor of _HID_DATA.
+        try
+        {
+            idPtr.ButtonData.Usages = new USAGE[idPtr.ButtonData.MaxUsageLength]{};
+        }
+        catch (const std::bad_alloc&) { return false; }
+
+        idPtr.ReportID = ibcPtr.ReportID;
     }
 
     // Fill in the value data
 
     for (int i = 0; i < Caps->NumberInputValueCaps; i++)
     {
-        if ((InputValueCaps.get()[i]).IsRange)
+        auto& ivcPtr = (InputValueCaps.get()[i]);
+
+        if (ivcPtr.IsRange)
         {
-            for (USAGE usage = (InputValueCaps.get()[i]).Range.UsageMin;
-                 usage <= (InputValueCaps.get()[i]).Range.UsageMax;
+            for (USAGE usage = ivcPtr.Range.UsageMin;
+                 usage <= ivcPtr.Range.UsageMax;
                  usage++)
             {
                 if (dataIdx >= (InputDataLength)) { return false; }
-                HidDevice::SetHidData(InputData, dataIdx, (InputValueCaps.get()[i]).UsagePage,
-                                      usage, (InputValueCaps.get()[i]).ReportID);
+                HidDevice::SetHidData(InputData, dataIdx, ivcPtr.UsagePage,
+                                      usage, ivcPtr.ReportID);
             }
         }
         else
         {
-            HidDevice::SetHidData(InputData, dataIdx, (InputValueCaps.get()[i]).UsagePage,
-                                  (InputValueCaps.get()[i]).NotRange.Usage, (InputValueCaps.get()[i]).ReportID);
+            HidDevice::SetHidData(InputData, dataIdx, ivcPtr.UsagePage,
+                                  ivcPtr.NotRange.Usage, ivcPtr.ReportID);
         }
     }
 
     // Setup Output Data Buffers
-
     OutputReportBuffer = std::make_unique<char[]>(Caps->OutputReportByteLength);
 
     numCaps = Caps->NumberOutputButtonCaps;
@@ -304,10 +417,12 @@ bool HidDevice::FillDevice()
     numValues = 0;
     for (int i = 0; i < Caps->NumberOutputValueCaps; i++)
     {
-        if ((OutputValueCaps.get()[i]).IsRange)
+        auto& ovcPtr = (OutputValueCaps.get()[i]);
+
+        if (ovcPtr.IsRange)
         {
-            numValues += (OutputValueCaps.get()[i]).Range.UsageMax
-                - (OutputValueCaps.get()[i]).Range.UsageMin + 1;
+            numValues += ovcPtr.Range.UsageMax
+                - ovcPtr.Range.UsageMin + 1;
         }
         else
         {
@@ -323,49 +438,60 @@ bool HidDevice::FillDevice()
     for (unsigned long i = 0; i < Caps->NumberOutputButtonCaps; i++)
     {
         unsigned long tmpSum{ 0 };
+        auto& odPtr = (OutputData.get()[dataIdx]);
+        auto& obcPtr = (OutputButtonCaps.get()[dataIdx]);
+        auto& ovcPtr = (OutputValueCaps.get()[dataIdx]);
 
         if (i >= OutputDataLength) { return false; }
 
-        // ULongAdd requires intsafe.h
-        if (FAILED(ULongAdd(Caps->NumberOutputButtonCaps, (OutputValueCaps.get()[dataIdx]).Range.UsageMax, &tmpSum))) { return false; }
+        // ULongAdd requires intsafe.h. 
+        // TODO: According to AddressSanitizer this is messing with unallocated memory. Need to look into this more.
+        if (FAILED(ULongAdd(Caps->NumberOutputButtonCaps, ovcPtr.Range.UsageMax, &tmpSum))) { return false; }
 
-        if ((OutputValueCaps.get()[dataIdx]).Range.UsageMin == tmpSum) { return false; }
+        if (ovcPtr.Range.UsageMin == tmpSum) { return false; }
 
-        (OutputData.get()[dataIdx]).IsButtonData = true;
-        (OutputData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-        (OutputData.get()[dataIdx]).UsagePage = (OutputButtonCaps.get()[dataIdx]).UsagePage;
+        odPtr.IsButtonData = true;
+        odPtr.Status = HIDP_STATUS_SUCCESS;
+        odPtr.UsagePage = obcPtr.UsagePage;
 
-        if ((OutputButtonCaps.get()[dataIdx]).IsRange)
+        if (obcPtr.IsRange)
         {
-            (OutputData.get()[dataIdx]).ButtonData.UsageMin = (OutputButtonCaps.get()[dataIdx]).Range.UsageMin;
-            (OutputData.get()[dataIdx]).ButtonData.UsageMax = (OutputButtonCaps.get()[dataIdx]).Range.UsageMax;
+            odPtr.ButtonData.UsageMin = obcPtr.Range.UsageMin;
+            odPtr.ButtonData.UsageMax = obcPtr.Range.UsageMax;
         }
         else
         {
-            (OutputData.get()[dataIdx]).ButtonData.UsageMin = (OutputData.get()[dataIdx]).ButtonData.UsageMax = (OutputButtonCaps.get()[dataIdx]).NotRange.Usage;
+            odPtr.ButtonData.UsageMin = odPtr.ButtonData.UsageMax = obcPtr.NotRange.Usage;
         }
-        (OutputData.get()[dataIdx]).ButtonData.MaxUsageLength = HidP_MaxUsageListLength(HidP_Output,
-                                                                                        (OutputButtonCaps.get()[dataIdx]).UsagePage,
-                                                                                        *Ppd.get());
-        (OutputData.get()[dataIdx]).ReportID = (OutputButtonCaps.get()[dataIdx]).ReportID;
+        odPtr.ButtonData.MaxUsageLength = HidP_MaxUsageListLength(HidP_Output,
+                                                                  obcPtr.UsagePage,
+                                                                  *Ppd.get());
+        try
+        {
+            odPtr.ButtonData.Usages = new USAGE[odPtr.ButtonData.MaxUsageLength]{};
+        }
+        catch (const std::bad_alloc&) { return false; }
+
+        odPtr.ReportID = obcPtr.ReportID;
     }
 
     for (int i = 0; i < Caps->NumberOutputValueCaps; i++)
     {
-        if ((OutputValueCaps.get()[i]).IsRange)
+        auto& ovcPtr = (OutputValueCaps.get()[i]);
+        if (ovcPtr.IsRange)
         {
-            for (USAGE usage = (OutputValueCaps.get()[i]).Range.UsageMin;
-                 usage <= (OutputValueCaps.get()[i]).Range.UsageMax;
+            for (USAGE usage = ovcPtr.Range.UsageMin;
+                 usage <= ovcPtr.Range.UsageMax;
                  usage++)
             {
-                HidDevice::SetHidData(OutputData, dataIdx, (OutputValueCaps.get()[i]).UsagePage,
-                                      usage, (OutputValueCaps.get()[i]).ReportID);
+                HidDevice::SetHidData(OutputData, dataIdx, ovcPtr.UsagePage,
+                                      usage, ovcPtr.ReportID);
             }
         }
         else
         {
-            HidDevice::SetHidData(OutputData, dataIdx, (OutputValueCaps.get()[i]).UsagePage,
-                                  (OutputValueCaps.get()[i]).NotRange.Usage, (OutputValueCaps.get()[i]).ReportID);
+            HidDevice::SetHidData(OutputData, dataIdx, ovcPtr.UsagePage,
+                                  ovcPtr.NotRange.Usage, ovcPtr.ReportID);
         }
     }
 
@@ -419,43 +545,54 @@ bool HidDevice::FillDevice()
     dataIdx = 0;
     for (int i = 0; i < Caps->NumberFeatureButtonCaps; i++, dataIdx++)
     {
-        (FeatureData.get()[dataIdx]).IsButtonData = true;
-        (FeatureData.get()[dataIdx]).Status = HIDP_STATUS_SUCCESS;
-        (FeatureData.get()[dataIdx]).UsagePage = (FeatureButtonCaps.get()[i]).UsagePage;
+        auto& fdPtr = (FeatureData.get())[dataIdx];
+        auto& fbcPtr = (FeatureButtonCaps.get())[i];
 
-        if ((FeatureButtonCaps.get()[i]).IsRange)
+        fdPtr.IsButtonData = true;
+        fdPtr.Status = HIDP_STATUS_SUCCESS;
+        fdPtr.UsagePage = fbcPtr.UsagePage;
+
+        if (fbcPtr.IsRange)
         {
-            (FeatureData.get()[dataIdx]).ButtonData.UsageMin = (FeatureButtonCaps.get()[i]).Range.UsageMin;
-            (FeatureData.get()[dataIdx]).ButtonData.UsageMax = (FeatureButtonCaps.get()[i]).Range.UsageMax;
+            fdPtr.ButtonData.UsageMin = fbcPtr.Range.UsageMin;
+            fdPtr.ButtonData.UsageMax = fbcPtr.Range.UsageMax;
         }
         else
         {
-            (FeatureData.get()[dataIdx]).ButtonData.UsageMin = (FeatureData.get()[dataIdx]).ButtonData.UsageMax = (FeatureButtonCaps.get()[i]).NotRange.Usage;
+            fdPtr.ButtonData.UsageMin = fdPtr.ButtonData.UsageMax = fbcPtr.NotRange.Usage;
         }
-        (FeatureData.get()[dataIdx]).ButtonData.MaxUsageLength = HidP_MaxUsageListLength(HidP_Feature,
-                                                                                         (FeatureButtonCaps.get()[i]).UsagePage,
-                                                                                         *Ppd.get());
-        (FeatureData.get()[dataIdx]).ReportID = (FeatureButtonCaps.get()[i]).ReportID;
+        fdPtr.ButtonData.MaxUsageLength = HidP_MaxUsageListLength(HidP_Feature,
+                                                                  fbcPtr.UsagePage,
+                                                                  *Ppd.get());
+
+        try
+        {
+            fdPtr.ButtonData.Usages = new USAGE[fdPtr.ButtonData.MaxUsageLength]{};
+        }
+        catch (const std::bad_alloc&) { return false; }
+        fdPtr.ReportID = fbcPtr.ReportID;
     }
 
     for (int i = 0; i < Caps->NumberFeatureValueCaps; i++)
     {
-        if ((FeatureValueCaps.get()[i]).IsRange)
+        auto& fvcPtr = (FeatureValueCaps.get()[i]);
+
+        if (fvcPtr.IsRange)
         {
-            for (USAGE usage = (FeatureValueCaps.get()[i]).Range.UsageMin;
-                 usage <= (FeatureValueCaps.get()[i]).Range.UsageMax;
+            for (USAGE usage = fvcPtr.Range.UsageMin;
+                 usage <= fvcPtr.Range.UsageMax;
                  usage++)
             {
                 if (dataIdx >= FeatureDataLength) { return false; }
-                HidDevice::SetHidData(FeatureData, dataIdx, (FeatureValueCaps.get()[i]).UsagePage,
-                                      usage, (FeatureValueCaps.get()[i]).ReportID);
+                HidDevice::SetHidData(FeatureData, dataIdx, fvcPtr.UsagePage,
+                                      usage, fvcPtr.ReportID);
             }
         }
         else
         {
             if (dataIdx >= FeatureDataLength) { return false; }
-            HidDevice::SetHidData(FeatureData, dataIdx, (FeatureValueCaps.get()[i]).UsagePage,
-                                  (FeatureValueCaps.get()[i]).NotRange.Usage, (FeatureValueCaps.get()[i]).ReportID);
+            HidDevice::SetHidData(FeatureData, dataIdx, fvcPtr.UsagePage,
+                                  fvcPtr.NotRange.Usage, fvcPtr.ReportID);
         }
     }
 
@@ -542,6 +679,16 @@ bool HidDevices::FindAllHidDevices()
     } while (GetLastError() != ERROR_NO_MORE_ITEMS);
 
     return false;
+}
+
+std::vector<HidDevicePtr>& HidDevices::getDevices()
+{
+    return devices;
+}
+
+const std::vector<HidDevicePtr>& HidDevices::getDevices() const
+{
+    return devices;
 }
 
 std::ostream& operator<<(std::ostream& strm, const HidDevice& hd)

@@ -21,7 +21,7 @@
 #pragma once
 #include <unordered_map>
 #include <wtypes.h>
-#include "hid.h"
+#include "HidDevice.h"
 #include "MacroAction.h"
 
 class MacroHandler
