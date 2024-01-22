@@ -22,6 +22,7 @@
 #include "libconfig.h++"
 #include "MacroAction.h"
 #include "Utils.h"
+#include <cxxopts.hpp>
 #include <string>
 #include <unordered_map>
 

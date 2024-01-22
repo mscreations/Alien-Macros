@@ -164,11 +164,11 @@
     <ResourceCompile Include="resources\Alien-Macros.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\cxxopts.hpp" />
     <ClInclude Include="include\HidDevice.h" />
     <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\version-git.h" />
     <ClInclude Include="include\version.h" />
-    <ClInclude Include="include\argparse.h" />
     <ClInclude Include="resources\resource.h" />
     <ClInclude Include="include\ProgSettings.h" />
     <ClInclude Include="include\MacroAction.h" />

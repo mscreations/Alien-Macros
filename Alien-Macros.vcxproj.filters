@@ -43,9 +43,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\argparse.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -68,6 +65,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\HidDevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cxxopts.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -18,7 +18,6 @@
  *
  */
 
-#include "argparse.h"
 #include "ProgSettings.h"
 #include <format>
 #include <iomanip>
@@ -26,36 +25,32 @@
 
 ProgSettings::ProgSettings(int argc, char* argv[])
 {
-    argparse::Parser parser;
+    cxxopts::Options options("Alien-Macros", "Macro key translator");
 
-    auto vid = parser.AddArg<std::string>("vid", 'v', "Target VID");
-    auto pid = parser.AddArg<std::string>("pid", 'p', "Target PID");
-    auto& ConfigFile = parser.AddArg<std::string>("config", 'c', "Configuration File").Default(DEFAULT_CFG_FILENAME);
+    options.add_options()
+        ("v,vid", "Target VID", cxxopts::value<short>())
+        ("p,pid", "Target PID", cxxopts::value<short>())
+        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value(DEFAULT_CFG_FILENAME))
+        ;
 
-    parser.ParseArgs(argc, argv);
+    auto result = options.parse(argc, argv);
 
-    short svid{};
-    short spid{};
+    std::string configFile = result["config"].as<std::string>();
 
-    if (vid && pid)
+    short vid{ 0 }, pid{ 0 };
+
+    if (result.count("vid")) { vid = result["vid"].as<short>(); }
+    if (result.count("pid")) { pid = result["pid"].as<short>(); }
+
+    if (!Load(configFile))
     {
-        std::regex re("(?:0x)[0-9a-fA-F]{4}");
-        if (!std::regex_match(*pid, re) || !std::regex_match(*vid, re))
-        {
-            throw std::invalid_argument("VID/PID is invalid. Please make sure it is in the format 0xXXXX where XXXX is the hexadecimal VID/PID.");
-        }
-        svid = static_cast<short>(std::stoi(*vid, nullptr, 16));
-        spid = static_cast<short>(std::stoi(*pid, nullptr, 16));
-    }
-
-    if (!Load(*ConfigFile))
-    {
+        std::cerr << "Configuration file could not be loaded" << std::endl;
         throw std::invalid_argument("Configuration file could not be loaded");
     }
 
     // if command line arguments for VID and PID are different than configuration, use them instead.
-    if (svid != 0 && targetVID != svid) { targetVID = svid; }
-    if (spid != 0 && targetPID != spid) { targetPID = spid; }
+    if (vid != 0 && targetVID != vid) { targetVID = vid; }
+    if (pid != 0 && targetPID != pid) { targetPID = pid; }
 }
 
 std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
