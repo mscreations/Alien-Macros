@@ -42,7 +42,7 @@ bool HidDevice::UnpackReport(std::unique_ptr<char[]>& ReportBuffer,
                 dtaPtr.Status = HidP_GetUsages(ReportType,
                                                dtaPtr.UsagePage,
                                                0,
-                                               dtaPtr.ButtonData.Usages,
+                                               dtaPtr.ButtonData.Usages.data(),
                                                &numUsages,
                                                *(Ppd.get()),
                                                ReportBuffer.get(),
@@ -115,7 +115,7 @@ bool HidDevice::IsTarget(int vid, int pid, int usagepage, int usagecode)
 
 USAGE HidDevice::getKeyPress()
 {
-    return *(InputData.get())->ButtonData.Usages;
+    return (InputData.get())->ButtonData.Usages.front();
 }
 
 std::string HidDevice::LoadHidString(std::function<BOOLEAN(HANDLE, PVOID, ULONG)> func) const
@@ -348,15 +348,7 @@ bool HidDevice::FillDevice()
                                                                   ibcPtr.UsagePage,
                                                                   *Ppd.get());
 
-        // TODO I would prefer this to utilize unique_ptr, however, when trying to allocate the new smart pointer
-        // from within HID_DATA, an exception keeps being thrown from the program trying to deallocate the already
-        // empty pointer. Not sure what to do to fix that. For the time being, use a raw pointer for this. The raw 
-        // pointer is freed by the deconstructor of _HID_DATA.
-        try
-        {
-            idPtr.ButtonData.Usages = new USAGE[idPtr.ButtonData.MaxUsageLength]{};
-        }
-        catch (const std::bad_alloc&) { return false; }
+        idPtr.ButtonData.Usages.resize(idPtr.ButtonData.MaxUsageLength);
 
         idPtr.ReportID = ibcPtr.ReportID;
     }
@@ -458,11 +450,7 @@ bool HidDevice::FillDevice()
         odPtr.ButtonData.MaxUsageLength = HidP_MaxUsageListLength(HidP_Output,
                                                                   obcPtr.UsagePage,
                                                                   *Ppd.get());
-        try
-        {
-            odPtr.ButtonData.Usages = new USAGE[odPtr.ButtonData.MaxUsageLength]{};
-        }
-        catch (const std::bad_alloc&) { return false; }
+        odPtr.ButtonData.Usages.resize(odPtr.ButtonData.MaxUsageLength);
 
         odPtr.ReportID = obcPtr.ReportID;
     }
@@ -560,11 +548,7 @@ bool HidDevice::FillDevice()
                                                                   fbcPtr.UsagePage,
                                                                   *Ppd.get());
 
-        try
-        {
-            fdPtr.ButtonData.Usages = new USAGE[fdPtr.ButtonData.MaxUsageLength]{};
-        }
-        catch (const std::bad_alloc&) { return false; }
+        fdPtr.ButtonData.Usages.resize(fdPtr.ButtonData.MaxUsageLength);
         fdPtr.ReportID = fbcPtr.ReportID;
     }
 

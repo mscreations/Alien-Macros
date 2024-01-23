@@ -45,39 +45,32 @@ typedef struct _HID_DATA
 
     union
     {
-        struct
+        struct _ButtonData
         {
             ULONG                       UsageMin;       // Variables to track the usage minimum and max
             ULONG                       UsageMax;       // If equal, then only a single usage
             ULONG                       MaxUsageLength; // Usages buffer length.
-            PUSAGE                      Usages;         // list of usages (buttons ``down'' on the device.
+            std::vector<USAGE>          Usages;         // list of usages (buttons ``down'' on the device.
+
+            _ButtonData() : UsageMin{ 0 }, UsageMax{ 0 }, MaxUsageLength{ 0 }, Usages{ std::vector<USAGE>() } {}
         } ButtonData;
-        struct
+        struct _ValueData
         {
             USAGE                       Usage;          // The usage describing this value
             USHORT                      Reserved;
             ULONG                       Value;
             LONG                        ScaledValue;
+            _ValueData() : Usage{ 0 }, Reserved{ 0 }, Value{ 0 }, ScaledValue{ 0 } {}
         } ValueData;
     };
 
-    _HID_DATA()
-        : IsButtonData(false), Reserved(0), UsagePage(0), Status(0), ReportID(0), IsDataSet(false)
+    _HID_DATA() : IsButtonData(true), Reserved(0), UsagePage(0), Status(0), ReportID(0), IsDataSet(false), ButtonData{}
     {
-        ButtonData.UsageMin = ButtonData.UsageMax = ButtonData.MaxUsageLength = 0;
-        ButtonData.Usages = nullptr;
-        ValueData.Usage = 0;
-        ValueData.Value = 0;
-        ValueData.Reserved = 0;
-        ValueData.ScaledValue = 0;
     }
 
     ~_HID_DATA()
     {
-        if (ButtonData.Usages != nullptr)
-        {
-            delete[] ButtonData.Usages;
-        }
+        ButtonData.Usages.clear();
     }
 } HID_DATA;
 
