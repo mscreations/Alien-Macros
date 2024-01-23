@@ -128,7 +128,7 @@ std::string HidDevice::LoadHidString(std::function<BOOLEAN(HANDLE, PVOID, ULONG)
         WideCharToMultiByte(CP_UTF8, 0, wideString.get(), -1, charString.get(), sizeRequired, NULL, NULL);
         return std::string(charString.get());
     }
-    return std::string();
+    return {};
 }
 
 void HidDevice::SetHidData(std::unique_ptr<HID_DATA[]>& ptr, unsigned long offset, USAGE up, USAGE usage, unsigned long rid)
@@ -326,7 +326,7 @@ bool HidDevice::FillDevice()
     // Fill in the button data
 
     unsigned long dataIdx{ 0 };
-    for (int i = 0; i < Caps->NumberInputButtonCaps; i++, dataIdx++)
+    for (int i = 0; i < Caps->NumberInputButtonCaps && InputData; i++, dataIdx++)
     {
         auto& idPtr = InputData[dataIdx];
         const auto& ibcPtr = InputButtonCaps[dataIdx];
@@ -363,7 +363,7 @@ bool HidDevice::FillDevice()
 
     // Fill in the value data
 
-    for (int i = 0; i < Caps->NumberInputValueCaps; i++)
+    for (int i = 0; i < Caps->NumberInputValueCaps && InputData; i++)
     {
         const auto& ivcPtr = InputValueCaps[i];
 
@@ -435,7 +435,7 @@ bool HidDevice::FillDevice()
     OutputData = std::make_unique<HID_DATA[]>(OutputDataLength);
 
     dataIdx = 0;
-    for (unsigned long i = 0; i < Caps->NumberOutputButtonCaps; i++, dataIdx++)
+    for (unsigned long i = 0; i < Caps->NumberOutputButtonCaps && OutputData; i++, dataIdx++)
     {
         auto& odPtr = OutputData[dataIdx];
         const auto& obcPtr = OutputButtonCaps[dataIdx];
@@ -467,7 +467,7 @@ bool HidDevice::FillDevice()
         odPtr.ReportID = obcPtr.ReportID;
     }
 
-    for (int i = 0; i < Caps->NumberOutputValueCaps; i++)
+    for (int i = 0; i < Caps->NumberOutputValueCaps && OutputData; i++)
     {
         const auto& ovcPtr = (OutputValueCaps.get()[i]);
         if (ovcPtr.IsRange)
@@ -568,7 +568,7 @@ bool HidDevice::FillDevice()
         fdPtr.ReportID = fbcPtr.ReportID;
     }
 
-    for (int i = 0; i < Caps->NumberFeatureValueCaps; i++)
+    for (int i = 0; i < Caps->NumberFeatureValueCaps && FeatureData; i++)
     {
         const auto& fvcPtr = (FeatureValueCaps.get()[i]);
 
