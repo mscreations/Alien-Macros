@@ -302,7 +302,7 @@ bool HidDevice::FillDevice()
 
     for (int i = 0; i < Caps->NumberInputValueCaps; i++)
     {
-        auto& ivcPtr = InputValueCaps[i];
+        const auto& ivcPtr = InputValueCaps[i];
 
         if (ivcPtr.IsRange)
         {
@@ -329,7 +329,7 @@ bool HidDevice::FillDevice()
     for (int i = 0; i < Caps->NumberInputButtonCaps; i++, dataIdx++)
     {
         auto& idPtr = InputData[dataIdx];
-        auto& ibcPtr = InputButtonCaps[dataIdx];
+        const auto& ibcPtr = InputButtonCaps[dataIdx];
 
         idPtr.IsButtonData = true;
         idPtr.Status = HIDP_STATUS_SUCCESS;
@@ -365,7 +365,7 @@ bool HidDevice::FillDevice()
 
     for (int i = 0; i < Caps->NumberInputValueCaps; i++)
     {
-        auto& ivcPtr = InputValueCaps[i];
+        const auto& ivcPtr = InputValueCaps[i];
 
         if (ivcPtr.IsRange)
         {
@@ -417,7 +417,7 @@ bool HidDevice::FillDevice()
     numValues = 0;
     for (int i = 0; i < Caps->NumberOutputValueCaps; i++)
     {
-        auto& ovcPtr = OutputValueCaps[i];
+        const auto& ovcPtr = OutputValueCaps[i];
 
         if (ovcPtr.IsRange)
         {
@@ -438,7 +438,7 @@ bool HidDevice::FillDevice()
     for (unsigned long i = 0; i < Caps->NumberOutputButtonCaps; i++, dataIdx++)
     {
         auto& odPtr = OutputData[dataIdx];
-        auto& obcPtr = OutputButtonCaps[dataIdx];
+        const auto& obcPtr = OutputButtonCaps[dataIdx];
 
         if (i >= OutputDataLength) { return false; }
 
@@ -469,7 +469,7 @@ bool HidDevice::FillDevice()
 
     for (int i = 0; i < Caps->NumberOutputValueCaps; i++)
     {
-        auto& ovcPtr = (OutputValueCaps.get()[i]);
+        const auto& ovcPtr = (OutputValueCaps.get()[i]);
         if (ovcPtr.IsRange)
         {
             for (USAGE usage = ovcPtr.Range.UsageMin;
@@ -541,7 +541,7 @@ bool HidDevice::FillDevice()
     for (int i = 0; i < Caps->NumberFeatureButtonCaps && FeatureData; i++, dataIdx++)
     {
         auto& fdPtr = FeatureData[dataIdx];
-        auto& fbcPtr = FeatureButtonCaps[i];
+        const auto& fbcPtr = FeatureButtonCaps[i];
 
         fdPtr.IsButtonData = true;
         fdPtr.Status = HIDP_STATUS_SUCCESS;
@@ -570,7 +570,7 @@ bool HidDevice::FillDevice()
 
     for (int i = 0; i < Caps->NumberFeatureValueCaps; i++)
     {
-        auto& fvcPtr = (FeatureValueCaps.get()[i]);
+        const auto& fvcPtr = (FeatureValueCaps.get()[i]);
 
         if (fvcPtr.IsRange)
         {
