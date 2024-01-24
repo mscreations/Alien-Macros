@@ -135,7 +135,7 @@ void HidDevice::SetHidData(HidDataPtr& ptr, const unsigned long offset, const US
     (ptr.get()[offset]).ReportID = rid;
 }
 
-HidDevice::HidDevice(const std::string DevicePath)
+HidDevice::HidDevice(const std::string& DevicePath)
 {
     this->DevicePath = DevicePath;
     this->device = INVALID_HANDLE_VALUE;
@@ -296,8 +296,10 @@ bool HidDevice::FillDevice()
     // found.
 
     InputDataLength = Caps->NumberInputButtonCaps + numValues;
-
-    InputData = std::make_unique<HID_DATA[]>(InputDataLength);
+    if (InputDataLength > 0)
+    {
+        InputData = std::make_unique<HID_DATA[]>(InputDataLength);
+    }
 
     // Fill in the button data
 
@@ -400,7 +402,10 @@ bool HidDevice::FillDevice()
 
     OutputDataLength = Caps->NumberOutputButtonCaps + numValues;
 
-    OutputData = std::make_unique<HID_DATA[]>(OutputDataLength);
+    if (OutputDataLength > 0)
+    {
+        OutputData = std::make_unique<HID_DATA[]>(OutputDataLength);
+    }
 
     dataIdx = 0;
     for (unsigned long i = 0; i < Caps->NumberOutputButtonCaps && OutputData; i++, dataIdx++)

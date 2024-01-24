@@ -20,7 +20,9 @@
 
 #include "MacroAction.h"
 
-void MacroAction::SetPayload(const char c, const short vk, const std::string s)
+using namespace std::string_literals;   // Required for string literal suffix
+
+void MacroAction::SetPayload(const char c, const short vk, const std::string& s)
 {
     this->_charPayload = c;
     this->_vkPayload = vk;
@@ -29,30 +31,30 @@ void MacroAction::SetPayload(const char c, const short vk, const std::string s)
 
 MacroAction::MacroAction()
 {
-    SetPayload(NULL, NULL, "");
+    SetPayload(NULL, NULL, ""s);
     this->description = "";
     this->ActionCode = MacroActionCode::Invalid;
 }
 
-MacroAction::MacroAction(const char newPayload, const std::string desc)
+MacroAction::MacroAction(const char newPayload, const std::string& desc)
 {
     this->description = desc;
     this->ActionCode = MacroActionCode::Char;
-    SetPayload(newPayload, NULL, "");
+    SetPayload(newPayload, NULL, ""s);
 }
 
-MacroAction::MacroAction(const std::string newPayload, const std::string desc)
+MacroAction::MacroAction(const std::string& newPayload, const std::string& desc)
 {
     this->description = desc;
     this->ActionCode = MacroActionCode::String;
     SetPayload(NULL, NULL, newPayload);
 }
 
-MacroAction::MacroAction(const short newPayload, const std::string desc)
+MacroAction::MacroAction(const short newPayload, const std::string& desc)
 {
     this->description = desc;
     this->ActionCode = MacroActionCode::VirtualKey;
-    SetPayload(NULL, newPayload, "");
+    SetPayload(NULL, newPayload, ""s);
 }
 
 MacroActionCode MacroAction::getActionCode() const

@@ -19,6 +19,10 @@
  */
 
 #pragma once
+
+ // Following option required so cxxopts uses static_cast instead of dynamic_cast which fails with int->short
+#define CXXOPTS_NO_RTTI
+
 #include "libconfig.h++"
 #include "MacroAction.h"
 #include "Utils.h"
@@ -45,29 +49,31 @@ constexpr auto MACRO_KEY_DESCRIPTION = "macrodescription";
 class ProgSettings
 {
 public:
-    ProgSettings(int argc, char* argv[]);
+    ProgSettings(int argc, const char* argv[]);
 
     friend std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps);
 
     void CreateBlank();
 
-    int getVID() const;
-    int getPID() const;
-    int getUsagePage() const;
-    int getUsageCode() const;
+    unsigned short getVID() const;
+    unsigned short getPID() const;
+    unsigned short getUsagePage() const;
+    unsigned short getUsageCode() const;
     std::string getDescription(const short scancode) const;
     std::unordered_map<short, MacroAction> getMacros() const;
 
 private:
-    int targetVID;
-    int targetPID;
-    int usagePage;
-    int usageCode;
+    unsigned short targetVID;
+    unsigned short targetPID;
+    unsigned short usagePage;
+    unsigned short usageCode;
+    void setTarget(int vid, int pid, int up, int uc);
+
     std::unordered_map<short, MacroAction> macrolist;
     std::string configFilename;
     libconfig::Config configuration;
 
-    bool Load(const std::string filename);
+    bool Load(const std::string& filename);
     bool Save();
 };
 

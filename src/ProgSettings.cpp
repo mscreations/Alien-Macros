@@ -24,24 +24,39 @@
 #include <iostream>
 #include <regex>
 
-ProgSettings::ProgSettings(int argc, char* argv[])
+ProgSettings::ProgSettings(int argc, const char* argv[])
 {
     cxxopts::Options options("Alien-Macros", "Macro key translator");
 
     options.add_options()
-        ("v,vid", "Target VID", cxxopts::value<short>())
-        ("p,pid", "Target PID", cxxopts::value<short>())
+        ("v,vid", "Target VID", cxxopts::value<int>())
+        ("p,pid", "Target PID", cxxopts::value<int>())
         ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value(DEFAULT_CFG_FILENAME))
+        ("h,help", "Help information")
         ;
 
-    auto result = options.parse(argc, argv);
-
-    std::string configFile = result["config"].as<std::string>();
-
+    std::string configFile{};
     short vid{ 0 }, pid{ 0 };
 
-    if (result.count("vid")) { vid = result["vid"].as<short>(); }
-    if (result.count("pid")) { pid = result["pid"].as<short>(); }
+    try
+    {
+        auto result = options.parse(argc, argv);
+        if (result.count("help"))
+        {
+            std::cout << options.help() << std::endl;
+            exit(true);
+        }
+
+        configFile = result["config"].as<std::string>();
+
+        if (result.count("vid")) { vid = result["vid"].as<short>(); }
+        if (result.count("pid")) { pid = result["pid"].as<short>(); }
+    }
+    catch (const std::exception& exc)
+    {
+        std::cerr << "Command line parsing exception: " << exc.what() << std::endl;
+        exit(false);
+    }
 
     if (!Load(configFile))
     {
@@ -96,10 +111,10 @@ void ProgSettings::CreateBlank()
     targetVID = 0x1a1c;
 }
 
-int ProgSettings::getVID() const { return targetVID; }
-int ProgSettings::getPID() const { return targetPID; }
-int ProgSettings::getUsagePage() const { return usagePage; }
-int ProgSettings::getUsageCode() const { return usageCode; }
+unsigned short ProgSettings::getVID() const { return targetVID; }
+unsigned short ProgSettings::getPID() const { return targetPID; }
+unsigned short ProgSettings::getUsagePage() const { return usagePage; }
+unsigned short ProgSettings::getUsageCode() const { return usageCode; }
 std::string ProgSettings::getDescription(const short scancode) const
 {
     return this->macrolist.at(scancode).getDescription();
@@ -111,7 +126,15 @@ bool ProgSettings::Save()
     return true;
 }
 
-bool ProgSettings::Load(const std::string filename)
+void ProgSettings::setTarget(int vid, int pid, int up, int uc)
+{
+    targetVID = static_cast<unsigned short>(vid);
+    targetPID = static_cast<unsigned short>(pid);
+    usagePage = static_cast<unsigned short>(up);
+    usageCode = static_cast<unsigned short>(uc);
+}
+
+bool ProgSettings::Load(const std::string& filename)
 {
     using namespace libconfig;
 
@@ -138,10 +161,7 @@ bool ProgSettings::Load(const std::string filename)
     {
         // Extract targetdevice details from configuration
         Setting& target = configuration.lookup(TARGET_DEVICE);
-        targetVID = target[VID];
-        targetPID = target[PID];
-        usagePage = target[USAGEPAGE];
-        usageCode = target[USAGECODE];
+        setTarget(target[VID], target[PID], target[USAGEPAGE], target[USAGECODE]);
 
         // Extract macro information from configuration
         Setting& macros = configuration.lookup(MACROS);

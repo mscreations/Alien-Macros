@@ -27,14 +27,14 @@ class MacroHandler
 {
 public:
     MacroHandler();
-    MacroHandler(const std::unordered_map<short, MacroAction> macros);
+    explicit MacroHandler(const std::unordered_map<short, MacroAction>& macros);
     ~MacroHandler();
     void Process(const USAGE macroKey);
 private:
     std::unordered_map<short, MacroAction> macroKeys;
     bool Send(const WORD wVk, const bool shift) const;
     bool Send(const char outChar) const;
-    bool Send(const std::string outputString) const;
+    bool Send(const std::string& outputString) const;
     std::vector<INPUT> GetKeystrokes(const WORD wVk, const bool shift) const;
     std::vector<INPUT> GetKeystrokes(const char outChar) const;
 };

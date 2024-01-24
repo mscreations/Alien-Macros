@@ -24,7 +24,7 @@
 #include "HidDevice.h"
 #include "MacroHandler.h"
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
 
     ProgSettings ps{ argc, argv };
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     HidDevices devices{};
     devices.FindAllHidDevices();
 
-    std::vector<HidDevicePtr>& list = devices.getDevices();
+    const std::vector<HidDevicePtr>& list = devices.getDevices();
 
     for (const auto& dev : list)
     {

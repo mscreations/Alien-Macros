@@ -36,13 +36,13 @@ class MacroAction
     std::string     _strPayload;
     short           _vkPayload;
     std::string     description;
-    void SetPayload(char, short, std::string);
+    void SetPayload(char, short, const std::string&);
 
 public:
     MacroAction();
-    MacroAction(const char newPayload, const std::string desc);
-    MacroAction(const std::string newPayload, const std::string desc);
-    MacroAction(const short newPayload, const std::string desc);
+    MacroAction(const char newPayload, const std::string& desc);
+    MacroAction(const std::string& newPayload, const std::string& desc);
+    MacroAction(const short newPayload, const std::string& desc);
     MacroActionCode getActionCode() const;
     char getChar() const;
     std::string getString() const;

@@ -30,11 +30,7 @@ MacroHandler::MacroHandler()
     macroKeys[0x4f] = MacroAction((short)VK_F16, "Macro D");
 }
 
-MacroHandler::MacroHandler(const std::unordered_map<short, MacroAction> macros)
-{
-    macroKeys = macros;
-}
-
+MacroHandler::MacroHandler(const std::unordered_map<short, MacroAction>& macros) : macroKeys(macros) {}
 MacroHandler::~MacroHandler() { macroKeys.clear(); }
 
 void MacroHandler::Process(const USAGE macroKey)
@@ -69,7 +65,7 @@ bool MacroHandler::Send(const char outChar) const
     return Send(static_cast<WORD>((vk & 0xFF)), static_cast<bool>((vk & 0x0100) >> 8));
 }
 
-bool MacroHandler::Send(const std::string outputString) const
+bool MacroHandler::Send(const std::string& outputString) const
 {
     std::vector<INPUT> inputs;
 

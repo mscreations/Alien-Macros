@@ -115,7 +115,7 @@ class HidDevice
                              unsigned long DataLength,
                              std::unique_ptr<PHIDP_PREPARSED_DATA>& Ppd);
 public:
-    HidDevice(const std::string DevicePath);
+    explicit HidDevice(const std::string& DevicePath);
     ~HidDevice();
     bool IsOpen() const;
     void Close();
