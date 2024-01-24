@@ -21,6 +21,7 @@
 #include "ProgSettings.h"
 #include <format>
 #include <iomanip>
+#include <iostream>
 #include <regex>
 
 ProgSettings::ProgSettings(int argc, char* argv[])
@@ -55,36 +56,35 @@ ProgSettings::ProgSettings(int argc, char* argv[])
 
 std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
 {
-    strm << "CONFIGURATION:" << std::endl;
-    strm << std::endl << "TargetDevice:" << std::endl;
-    strm << std::format("VID:        {:#06x}\nPID:        {:#06x}\nUsagePage:  {:#04x}\nUsage:      {:#04x}",
-                   ps.targetVID, ps.targetPID, ps.usagePage, ps.usageCode) << std::endl << std::endl;
+    strm << "CONFIGURATION:\n\nTargetDevice:\n";
+    strm << std::format("VID: {:#06x} PID: {:#06x}\nUsagePage : {:#04x} Usage: {:#04x}\n\n",
+                   ps.targetVID, ps.targetPID, ps.usagePage, ps.usageCode);
 
-    strm << "Macro Keys: " << ps.macrolist.size() << std::endl << std::endl;
+    strm << "# Macro Keys: " << ps.macrolist.size() << "\n\n";
 
-    for (const auto& macro : ps.macrolist)
+    for (const auto& [key, macro] : ps.macrolist)
     {
-        strm << "Macro Code: 0x" << std::hex << macro.first << std::endl;
-        MacroAction action = static_cast<MacroAction>(macro.second);
-        switch (action.GetActionCode())
+        MacroAction action = static_cast<MacroAction>(macro);
+
+        strm << std::format("Macro: {:s} ({:#04x})\n", action.getDescription(), key);
+        switch (action.getActionCode())
         {
             case MacroActionCode::VirtualKey:
-                strm << "Virtual Key Action" << std::endl;
-                strm << "Virtual Key Payload: " << std::left << std::setw(10) << GetKeyName(action.GetVK()) << std::endl;
+                strm << "Virtual Key Action\n";
+                strm << std::format("    Payload: {:s}\n\n", GetKeyName(action.getVK()));
                 break;
             case MacroActionCode::Char:
-                strm << "Char Action" << std::endl;
-                strm << "Char Payload: " << action.GetChar() << std::endl;
+                strm << "Char Action\n";
+                strm << std::format("    Payload: {}\n\n", action.getChar());
                 break;
             case MacroActionCode::String:
-                strm << "String Action" << std::endl;
-                strm << "String Payload: " << action.GetString() << std::endl;
+                strm << "String Action\n";
+                strm << std::format("    Payload: {:s}\n\n", action.getString());
                 break;
             default:
-                strm << "Unknown/Undefined action code" << std::endl;
+                strm << "Unknown/Undefined action code\n\n";
                 break;
         }
-        strm << std::endl;
     }
     return strm;
 }
@@ -100,13 +100,18 @@ int ProgSettings::getVID() const { return targetVID; }
 int ProgSettings::getPID() const { return targetPID; }
 int ProgSettings::getUsagePage() const { return usagePage; }
 int ProgSettings::getUsageCode() const { return usageCode; }
+std::string ProgSettings::getDescription(const short scancode) const
+{
+    return this->macrolist.at(scancode).getDescription();
+}
+std::unordered_map<short, MacroAction> ProgSettings::getMacros() const { return macrolist; }
 
 bool ProgSettings::Save()
 {
     return true;
 }
 
-bool ProgSettings::Load(std::string filename)
+bool ProgSettings::Load(const std::string filename)
 {
     using namespace libconfig;
 
@@ -144,16 +149,21 @@ bool ProgSettings::Load(std::string filename)
         for (Setting& macro : macros)
         {
             int scancode{ 0 }, payloadtype{ 0 }, actioncode{ 0 };
+            short shortscancode{ 0 };
+            std::string description{};
 
             macro.lookupValue(SCANCODE, scancode);
             macro.lookupValue(PAYLOAD_TYPE, payloadtype);
             macro.lookupValue(MACRO_ACTION, actioncode);
+            macro.lookupValue(MACRO_KEY_DESCRIPTION, description);
+
+            shortscancode = static_cast<short>(scancode);
 
             if (payloadtype == Setting::TypeString)
             {
                 std::string stringPayload{};
                 macro.lookupValue(MACRO_PAYLOAD, stringPayload);
-                macrolist[scancode] = MacroAction(stringPayload);
+                macrolist[shortscancode] = MacroAction(stringPayload, description);
             }
             else if (payloadtype == Setting::TypeInt)
             {
@@ -163,10 +173,10 @@ bool ProgSettings::Load(std::string filename)
                 switch (static_cast<MacroActionCode>(actioncode))
                 {
                     case MacroActionCode::VirtualKey:
-                        macrolist[scancode] = MacroAction(static_cast<short>(intPayload));
+                        macrolist[shortscancode] = MacroAction(static_cast<short>(intPayload), description);
                         break;
                     case MacroActionCode::Char:
-                        macrolist[scancode] = MacroAction(static_cast<char>(intPayload));
+                        macrolist[shortscancode] = MacroAction(static_cast<char>(intPayload), description);
                         break;
                 }
             }

@@ -20,7 +20,7 @@
 
 #include "MacroAction.h"
 
-void MacroAction::SetPayload(char c, short vk, std::string s)
+void MacroAction::SetPayload(const char c, const short vk, const std::string s)
 {
     this->_charPayload = c;
     this->_vkPayload = vk;
@@ -30,46 +30,64 @@ void MacroAction::SetPayload(char c, short vk, std::string s)
 MacroAction::MacroAction()
 {
     SetPayload(NULL, NULL, "");
+    this->description = "";
     this->ActionCode = MacroActionCode::Invalid;
 }
 
-MacroAction::MacroAction(char newPayload)
+MacroAction::MacroAction(const char newPayload, const std::string desc)
 {
+    this->description = desc;
     this->ActionCode = MacroActionCode::Char;
     SetPayload(newPayload, NULL, "");
 }
 
-MacroAction::MacroAction(std::string newPayload)
+MacroAction::MacroAction(const std::string newPayload, const std::string desc)
 {
+    this->description = desc;
     this->ActionCode = MacroActionCode::String;
     SetPayload(NULL, NULL, newPayload);
 }
 
-MacroAction::MacroAction(short newPayload)
+MacroAction::MacroAction(const short newPayload, const std::string desc)
 {
+    this->description = desc;
     this->ActionCode = MacroActionCode::VirtualKey;
     SetPayload(NULL, newPayload, "");
 }
-MacroAction::~MacroAction()
-{
-}
 
-MacroActionCode MacroAction::GetActionCode() const
+MacroActionCode MacroAction::getActionCode() const
 {
     return this->ActionCode;
 }
 
-char MacroAction::GetChar() const
+char MacroAction::getChar() const
 {
-    return this->_charPayload;
+    if (this->ActionCode == MacroActionCode::Char)
+    {
+        return this->_charPayload;
+    }
+    return {};
 }
 
-std::string MacroAction::GetString() const
+std::string MacroAction::getString() const
 {
-    return this->_strPayload;
+    if (this->ActionCode == MacroActionCode::String)
+    {
+        return this->_strPayload;
+    }
+    return {};
 }
 
-short MacroAction::GetVK() const
+short MacroAction::getVK() const
 {
-    return this->_vkPayload;
+    if (this->ActionCode == MacroActionCode::VirtualKey)
+    {
+        return this->_vkPayload;
+    }
+    return {};
+}
+
+std::string MacroAction::getDescription() const
+{
+    return this->description;
 }

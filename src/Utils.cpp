@@ -20,7 +20,7 @@
 
 #include "Utils.h"
 
-std::string GetKeyName(short vk)
+std::string GetKeyName(const short vk)
 {
     std::string ret{};
 

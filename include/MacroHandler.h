@@ -20,7 +20,6 @@
 
 #pragma once
 #include <unordered_map>
-#include <wtypes.h>
 #include "HidDevice.h"
 #include "MacroAction.h"
 
@@ -28,13 +27,14 @@ class MacroHandler
 {
 public:
     MacroHandler();
+    MacroHandler(const std::unordered_map<short, MacroAction> macros);
     ~MacroHandler();
-    void Process(USAGE macroKey);
+    void Process(const USAGE macroKey);
 private:
     std::unordered_map<short, MacroAction> macroKeys;
-    bool Send(WORD wVk, bool shift);
-    bool Send(char outChar);
-    bool Send(std::string outputString);
-    std::vector<INPUT> GetKeystrokes(WORD wVk, bool shift);
-    std::vector<INPUT> GetKeystrokes(char outChar);
+    bool Send(const WORD wVk, const bool shift) const;
+    bool Send(const char outChar) const;
+    bool Send(const std::string outputString) const;
+    std::vector<INPUT> GetKeystrokes(const WORD wVk, const bool shift) const;
+    std::vector<INPUT> GetKeystrokes(const char outChar) const;
 };

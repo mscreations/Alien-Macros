@@ -40,4 +40,4 @@ enum class VirtualKeys : short
     VK_ABNT_C1, VK_ABNT_C2, VK_OEM_4 = 0xDB, VK_OEM_5, VK_OEM_6, VK_OEM_7,
 };
 
-std::string GetKeyName(short vk);
+std::string GetKeyName(const short vk);

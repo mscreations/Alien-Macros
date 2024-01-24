@@ -20,10 +20,10 @@
 
 #include "HidDevice.h"
 
-bool HidDevice::UnpackReport(std::unique_ptr<char[]>& ReportBuffer,
+bool HidDevice::UnpackReport(charBufferPtr& ReportBuffer,
                              unsigned short ReportBufferLength,
                              HIDP_REPORT_TYPE ReportType,
-                             std::unique_ptr<HID_DATA[]>& Data,
+                             HidDataPtr& Data,
                              unsigned long DataLength,
                              std::unique_ptr<PHIDP_PREPARSED_DATA>& Ppd)
 {
@@ -100,11 +100,6 @@ bool HidDevice::UnpackReport(std::unique_ptr<char[]>& ReportBuffer,
     return true;
 }
 
-bool HidDevice::PackReport()
-{
-    return false;
-}
-
 bool HidDevice::IsTarget(int vid, int pid, int usagepage, int usagecode)
 {
     return Attributes->VendorID == vid &&
@@ -118,7 +113,7 @@ USAGE HidDevice::getKeyPress()
     return (InputData.get())->ButtonData.Usages.front();
 }
 
-std::string HidDevice::LoadHidString(std::function<BOOLEAN(HANDLE, PVOID, ULONG)> func) const
+std::string HidDevice::LoadHidString(const std::function<BOOLEAN(HANDLE, PVOID, ULONG)> func) const
 {
     auto wideString = std::make_unique<wchar_t[]>(256);
     if (func(device, wideString.get(), 256))
@@ -131,7 +126,7 @@ std::string HidDevice::LoadHidString(std::function<BOOLEAN(HANDLE, PVOID, ULONG)
     return {};
 }
 
-void HidDevice::SetHidData(std::unique_ptr<HID_DATA[]>& ptr, unsigned long offset, USAGE up, USAGE usage, unsigned long rid)
+void HidDevice::SetHidData(HidDataPtr& ptr, const unsigned long offset, const USAGE up, const USAGE usage, const unsigned long rid)
 {
     (ptr.get()[offset]).IsButtonData = false;
     (ptr.get()[offset]).Status = HIDP_STATUS_SUCCESS;
@@ -140,7 +135,7 @@ void HidDevice::SetHidData(std::unique_ptr<HID_DATA[]>& ptr, unsigned long offse
     (ptr.get()[offset]).ReportID = rid;
 }
 
-HidDevice::HidDevice(std::string DevicePath)
+HidDevice::HidDevice(const std::string DevicePath)
 {
     this->DevicePath = DevicePath;
     this->device = INVALID_HANDLE_VALUE;
@@ -149,10 +144,7 @@ HidDevice::HidDevice(std::string DevicePath)
     this->Caps = std::make_unique<HIDP_CAPS>();
 }
 
-HidDevice::~HidDevice()
-{
-    Close();
-}
+HidDevice::~HidDevice() { Close(); }
 
 void HidDevice::Close()
 {
@@ -172,6 +164,11 @@ bool HidDevice::Read()
 {
     unsigned long bytesRead;
 
+    if (!IsOpen() && OpenedForRead)
+    {
+        throw std::exception("HidDevice not open for read.");
+    }
+
     if (!ReadFile(device,
                   InputReportBuffer.get(),
                   Caps->InputReportByteLength,
@@ -190,16 +187,6 @@ bool HidDevice::Read()
                         Ppd);
 }
 
-bool HidDevice::ReadOverlapped()
-{
-    return false;
-}
-
-bool HidDevice::Write()
-{
-    return false;
-}
-
 bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped, bool IsExclusive)
 {
     // If HidDevice is already open (likely with other permissions), close it first.
@@ -209,20 +196,9 @@ bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped,
 
     if (DevicePath.empty()) { return false; }
 
-    if (HasReadAccess)
-    {
-        accessFlags |= GENERIC_READ;
-    }
-
-    if (HasWriteAccess)
-    {
-        accessFlags |= GENERIC_WRITE;
-    }
-
-    if (!IsExclusive)
-    {
-        sharingFlags = FILE_SHARE_READ | FILE_SHARE_WRITE;
-    }
+    if (HasReadAccess) { accessFlags |= GENERIC_READ; }
+    if (HasWriteAccess) { accessFlags |= GENERIC_WRITE; }
+    if (!IsExclusive) { sharingFlags = FILE_SHARE_READ | FILE_SHARE_WRITE; }
 
     device = CreateFileA(DevicePath.c_str(),
                          accessFlags,

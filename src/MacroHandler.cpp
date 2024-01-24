@@ -23,51 +23,53 @@
 
 MacroHandler::MacroHandler()
 {
-    // TODO
-    macroKeys[0x4c] = MacroAction((short)VK_F13);
-    macroKeys[0x4d] = MacroAction((short)VK_F14);
-    macroKeys[0x4e] = MacroAction((short)VK_F15);
-    macroKeys[0x4f] = MacroAction((short)VK_F16);
+    // Default handler sets the 4 macro keys from the Alienware m17 R4 to be remapped to F13-F16
+    macroKeys[0x4c] = MacroAction((short)VK_F13, "Macro A");
+    macroKeys[0x4d] = MacroAction((short)VK_F14, "Macro B");
+    macroKeys[0x4e] = MacroAction((short)VK_F15, "Macro C");
+    macroKeys[0x4f] = MacroAction((short)VK_F16, "Macro D");
 }
 
-MacroHandler::~MacroHandler()
+MacroHandler::MacroHandler(const std::unordered_map<short, MacroAction> macros)
 {
-    macroKeys.clear();
+    macroKeys = macros;
 }
 
-void MacroHandler::Process(USAGE macroKey)
+MacroHandler::~MacroHandler() { macroKeys.clear(); }
+
+void MacroHandler::Process(const USAGE macroKey)
 {
     MacroAction action = macroKeys[macroKey];
-    switch (action.GetActionCode())
+    switch (action.getActionCode())
     {
         case MacroActionCode::VirtualKey:
-            Send(action.GetVK(), false);
+            Send(action.getVK(), false);
             break;
         case MacroActionCode::Char:
-            Send(action.GetChar());
+            Send(action.getChar());
             break;
         case MacroActionCode::String:
-            Send(action.GetString());
+            Send(action.getString());
             break;
         default:
             break;
     }
 }
 
-bool MacroHandler::Send(WORD wVk, bool shift)
+bool MacroHandler::Send(const WORD wVk, const bool shift) const
 {
     std::vector<INPUT> inputs = GetKeystrokes(wVk, shift);
     int sentCount = SendInput(static_cast<UINT>(inputs.size()), &inputs[0], sizeof(INPUT));
     return (sentCount == inputs.size());
 }
 
-bool MacroHandler::Send(char outChar)
+bool MacroHandler::Send(const char outChar) const
 {
     SHORT vk = VkKeyScanExA(outChar, GetKeyboardLayout(0));
     return Send(static_cast<WORD>((vk & 0xFF)), static_cast<bool>((vk & 0x0100) >> 8));
 }
 
-bool MacroHandler::Send(std::string outputString)
+bool MacroHandler::Send(const std::string outputString) const
 {
     std::vector<INPUT> inputs;
 
@@ -80,7 +82,7 @@ bool MacroHandler::Send(std::string outputString)
     return (SentCount == inputs.size());
 }
 
-std::vector<INPUT> MacroHandler::GetKeystrokes(WORD wVk, bool shift)
+std::vector<INPUT> MacroHandler::GetKeystrokes(const WORD wVk, const bool shift) const
 {
     std::vector<INPUT> inputs;
     INPUT shiftInput{ .type = INPUT_KEYBOARD, .ki = {VK_LSHIFT, 0, 0, 0, 0} };
@@ -105,7 +107,7 @@ std::vector<INPUT> MacroHandler::GetKeystrokes(WORD wVk, bool shift)
     return inputs;
 }
 
-std::vector<INPUT> MacroHandler::GetKeystrokes(char outChar)
+std::vector<INPUT> MacroHandler::GetKeystrokes(const char outChar) const
 {
     SHORT vk = VkKeyScanExA(outChar, GetKeyboardLayout(0));
     return GetKeystrokes(static_cast<WORD>((vk & 0xFF)), static_cast<bool>((vk & 0x0100) >> 8));

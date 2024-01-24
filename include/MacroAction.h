@@ -19,7 +19,7 @@
  */
 
 #pragma once
-#include <iostream>
+#include <string>
 
 enum class MacroActionCode : int
 {
@@ -35,17 +35,18 @@ class MacroAction
     char            _charPayload;
     std::string     _strPayload;
     short           _vkPayload;
+    std::string     description;
     void SetPayload(char, short, std::string);
 
 public:
     MacroAction();
-    MacroAction(char newPayload);
-    MacroAction(std::string newPayload);
-    MacroAction(short newPayload);
-    ~MacroAction();
-    MacroActionCode GetActionCode() const;
-    char GetChar() const;
-    std::string GetString() const;
-    short GetVK() const;
+    MacroAction(const char newPayload, const std::string desc);
+    MacroAction(const std::string newPayload, const std::string desc);
+    MacroAction(const short newPayload, const std::string desc);
+    MacroActionCode getActionCode() const;
+    char getChar() const;
+    std::string getString() const;
+    short getVK() const;
+    std::string getDescription() const;
 };
 

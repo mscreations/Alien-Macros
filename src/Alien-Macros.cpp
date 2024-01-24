@@ -28,6 +28,7 @@ int main(int argc, char* argv[])
 {
 
     ProgSettings ps{ argc, argv };
+    MacroHandler mh(ps.getMacros());
 
     std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
 
@@ -38,23 +39,26 @@ int main(int argc, char* argv[])
     HidDevices devices{};
     devices.FindAllHidDevices();
 
-    MacroHandler mh{};
-
     std::vector<HidDevicePtr>& list = devices.getDevices();
 
-    for (auto& dev : list)
+    for (const auto& dev : list)
     {
         if (dev->IsTarget(ps.getVID(), ps.getPID(), ps.getUsagePage(), ps.getUsageCode()))
         {
             std::cout << "Found target device: \n" << *(dev.get()) << std::endl;
+
+            dev.get()->Open(true);      // Open with Read Access. All other parameters default false.
             while (true)
             {
-                dev.get()->Open(true);      // Open with Read Access. All other parameters default false.
                 dev.get()->Read();
 
-                std::cout << "Read: " << std::hex << dev.get()->getKeyPress() << std::endl;
+                unsigned short key = dev.get()->getKeyPress();
 
-                mh.Process(dev.get()->getKeyPress());
+                if (key == 0x00) { continue; }
+
+                std::cout << "Read: 0x" << std::hex << key << " " << ps.getDescription(key) << std::endl;
+
+                mh.Process(key);
             }
         }
     }

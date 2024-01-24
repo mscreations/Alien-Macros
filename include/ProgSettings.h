@@ -40,9 +40,7 @@ constexpr auto SCANCODE = "scancode";
 constexpr auto PAYLOAD_TYPE = "payloadtype";
 constexpr auto MACRO_ACTION = "macroaction";
 constexpr auto MACRO_PAYLOAD = "macropayload";
-
-#define AW_KB_VID       "0x0d62"
-#define AW_KB_PID       "0x1a1c"
+constexpr auto MACRO_KEY_DESCRIPTION = "macrodescription";
 
 class ProgSettings
 {
@@ -57,17 +55,19 @@ public:
     int getPID() const;
     int getUsagePage() const;
     int getUsageCode() const;
+    std::string getDescription(const short scancode) const;
+    std::unordered_map<short, MacroAction> getMacros() const;
 
 private:
     int targetVID;
     int targetPID;
     int usagePage;
     int usageCode;
-    std::unordered_map<int, MacroAction> macrolist;
+    std::unordered_map<short, MacroAction> macrolist;
     std::string configFilename;
     libconfig::Config configuration;
 
-    bool Load(std::string filename);
+    bool Load(const std::string filename);
     bool Save();
 };
 

@@ -43,36 +43,32 @@ typedef struct _HID_DATA
     bool                                IsDataSet;      // Variable to track whether a given data structure
     //  has already been added to a report structure
 
-    union
+    struct _ButtonData
     {
-        struct _ButtonData
-        {
-            ULONG                       UsageMin;       // Variables to track the usage minimum and max
-            ULONG                       UsageMax;       // If equal, then only a single usage
-            ULONG                       MaxUsageLength; // Usages buffer length.
-            std::vector<USAGE>          Usages;         // list of usages (buttons ``down'' on the device.
+        ULONG                       UsageMin;       // Variables to track the usage minimum and max
+        ULONG                       UsageMax;       // If equal, then only a single usage
+        ULONG                       MaxUsageLength; // Usages buffer length.
+        std::vector<USAGE>          Usages;         // list of usages (buttons ``down'' on the device.
 
-            _ButtonData() : UsageMin{ 0 }, UsageMax{ 0 }, MaxUsageLength{ 0 }, Usages{ std::vector<USAGE>() } {}
-        } ButtonData;
-        struct _ValueData
-        {
-            USAGE                       Usage;          // The usage describing this value
-            USHORT                      Reserved;
-            ULONG                       Value;
-            LONG                        ScaledValue;
-            _ValueData() : Usage{ 0 }, Reserved{ 0 }, Value{ 0 }, ScaledValue{ 0 } {}
-        } ValueData;
-    };
-
-    _HID_DATA() : IsButtonData(true), Reserved(0), UsagePage(0), Status(0), ReportID(0), IsDataSet(false), ButtonData{}
+        _ButtonData() : UsageMin{ 0 }, UsageMax{ 0 }, MaxUsageLength{ 0 }, Usages{ std::vector<USAGE>() } {}
+    } ButtonData;
+    struct _ValueData
     {
-    }
+        USAGE                       Usage;          // The usage describing this value
+        USHORT                      Reserved;
+        ULONG                       Value;
+        LONG                        ScaledValue;
+        _ValueData() : Usage{ 0 }, Reserved{ 0 }, Value{ 0 }, ScaledValue{ 0 } {}
+    } ValueData;
 
-    ~_HID_DATA()
-    {
-        ButtonData.Usages.clear();
-    }
+    _HID_DATA() : IsButtonData(true), Reserved(0), UsagePage(0), Status(0), ReportID(0), IsDataSet(false), ButtonData{}, ValueData{} {}
+    ~_HID_DATA() { ButtonData.Usages.clear(); }
 } HID_DATA;
+
+using HidDataPtr = std::unique_ptr<HID_DATA[]>;
+using HidButtonCaps = std::unique_ptr<HIDP_BUTTON_CAPS[]>;
+using HidValueCaps = std::unique_ptr<HIDP_VALUE_CAPS[]>;
+using charBufferPtr = std::unique_ptr<char[]>;
 
 class HidDevice
 {
@@ -89,45 +85,41 @@ class HidDevice
     std::unique_ptr<HIDP_CAPS>              Caps{};
     std::unique_ptr<HIDD_ATTRIBUTES>        Attributes{};
 
-    std::unique_ptr<char[]>                 InputReportBuffer{};
+    charBufferPtr                           InputReportBuffer{};
     unsigned long                           InputDataLength{ 0 };
-    std::unique_ptr<HID_DATA[]>             InputData{};
-    std::unique_ptr<HIDP_BUTTON_CAPS[]>     InputButtonCaps{};
-    std::unique_ptr<HIDP_VALUE_CAPS[]>      InputValueCaps{};
+    HidDataPtr                              InputData{};
+    HidButtonCaps                           InputButtonCaps{};
+    HidValueCaps                            InputValueCaps{};
 
-    std::unique_ptr<char[]>                 OutputReportBuffer{};
+    charBufferPtr                           OutputReportBuffer{};
     unsigned long                           OutputDataLength{ 0 };
-    std::unique_ptr<HID_DATA[]>             OutputData{};
-    std::unique_ptr<HIDP_BUTTON_CAPS[]>     OutputButtonCaps{};
-    std::unique_ptr<HIDP_VALUE_CAPS[]>      OutputValueCaps{};
+    HidDataPtr                              OutputData{};
+    HidButtonCaps                           OutputButtonCaps{};
+    HidValueCaps                            OutputValueCaps{};
 
-    std::unique_ptr<char[]>                 FeatureReportBuffer{};
+    charBufferPtr                           FeatureReportBuffer{};
     unsigned long                           FeatureDataLength{ 0 };
-    std::unique_ptr<HID_DATA[]>             FeatureData{};
-    std::unique_ptr<HIDP_BUTTON_CAPS[]>     FeatureButtonCaps{};
-    std::unique_ptr<HIDP_VALUE_CAPS[]>      FeatureValueCaps{};
+    HidDataPtr                              FeatureData{};
+    HidButtonCaps                           FeatureButtonCaps{};
+    HidValueCaps                            FeatureValueCaps{};
 
 
-    std::string LoadHidString(std::function<BOOLEAN(HANDLE, PVOID, ULONG)>) const;
+    std::string LoadHidString(const std::function<BOOLEAN(HANDLE, PVOID, ULONG)>) const;
 
-    static void SetHidData(std::unique_ptr<HID_DATA[]>& ptr, unsigned long offset, USAGE up, USAGE usage, unsigned long rid);
+    static void SetHidData(HidDataPtr& ptr, const unsigned long offset, const USAGE up, const USAGE usage, const unsigned long rid);
 
-    static bool UnpackReport(std::unique_ptr<char[]>& ReportBuffer,
+    static bool UnpackReport(charBufferPtr& ReportBuffer,
                              unsigned short ReportBufferLength,
                              HIDP_REPORT_TYPE ReportType,
-                             std::unique_ptr<HID_DATA[]>& Data,
+                             HidDataPtr& Data,
                              unsigned long DataLength,
                              std::unique_ptr<PHIDP_PREPARSED_DATA>& Ppd);
-    static bool PackReport();
-
 public:
-    HidDevice(std::string DevicePath);
+    HidDevice(const std::string DevicePath);
     ~HidDevice();
     bool IsOpen() const;
     void Close();
     bool Read();
-    bool ReadOverlapped();
-    bool Write();
     bool Open(bool HasReadAccess = false, bool HasWriteAccess = false, bool IsOverlapped = false, bool IsExclusive = false);
     bool FillDevice();
     bool IsTarget(int vid, int pid, int usagepage, int usagecode);
