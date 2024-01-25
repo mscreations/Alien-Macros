@@ -23,6 +23,7 @@
 #include <iomanip>
 #include <iostream>
 #include <regex>
+#include "colors.h"
 
 ProgSettings::ProgSettings(int argc, const char* argv[])
 {
@@ -71,7 +72,7 @@ ProgSettings::ProgSettings(int argc, const char* argv[])
 
 std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
 {
-    strm << "CONFIGURATION:\n\nTargetDevice:\n";
+    strm << MakeColorCode(Colors::Red) << "CONFIGURATION:" << ResetColors() << "\n\nTargetDevice:\n";
     strm << std::format("VID: {:#06x} PID: {:#06x}\nUsagePage : {:#04x} Usage: {:#04x}\n\n",
                    ps.targetVID, ps.targetPID, ps.usagePage, ps.usageCode);
 

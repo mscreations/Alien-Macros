@@ -153,6 +153,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Alien-Macros.cpp" />
+    <ClCompile Include="src\colors.cpp" />
     <ClCompile Include="src\HidDevice.cpp" />
     <ClCompile Include="src\Utils.cpp" />
     <ClCompile Include="src\version.cpp" />
@@ -164,6 +165,7 @@
     <ResourceCompile Include="resources\Alien-Macros.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\colors.h" />
     <ClInclude Include="include\cxxopts.hpp" />
     <ClInclude Include="include\HidDevice.h" />
     <ClInclude Include="include\Utils.h" />
