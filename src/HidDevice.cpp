@@ -152,6 +152,7 @@ void HidDevice::Close()
     {
         CloseHandle(device);
         device = INVALID_HANDLE_VALUE;
+        OpenedForRead = OpenedForWrite = OpenedExclusive = OpenedOverlapped = false;
     }
 }
 
@@ -564,7 +565,7 @@ HidDevices::HidDevices()
     devices.clear();
 }
 
-bool HidDevices::FindAllHidDevices()
+bool HidDevices::FindAllHidDevices(bool CloseAllDevices)
 {
     HDEVINFO hardwareDeviceInfo{};
     GUID hidGuid;
@@ -638,7 +639,15 @@ bool HidDevices::FindAllHidDevices()
         i++;
     } while (GetLastError() != ERROR_NO_MORE_ITEMS);
 
-    return false;
+    if (CloseAllDevices)
+    {
+        for (const auto& dev : devices)
+        {
+            dev.get()->Close();
+        }
+    }
+
+    return true;
 }
 
 std::vector<HidDevicePtr>& HidDevices::getDevices()

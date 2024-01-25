@@ -136,7 +136,7 @@ class HidDevices
 
 public:
     HidDevices();
-    bool FindAllHidDevices();
+    bool FindAllHidDevices(bool CloseAllDevices = false);
     std::vector<HidDevicePtr>& getDevices();
     const std::vector<HidDevicePtr>& getDevices() const;
 
