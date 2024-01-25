@@ -22,6 +22,10 @@
 
 #include <string>
 
+#ifdef VK_CANCEL
+#error "NAME CLASH"
+#endif
+
 enum class VirtualKeys : short
 {
     VK_CANCEL = 0x03, VK_BACK = 0x08, VK_TAB = 0x09, VK_CLEAR = 0x0C, VK_RETURN = 0x0D, VK_PAUSE = 0x13, VK_CAPITAL = 0x14,
