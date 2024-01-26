@@ -167,7 +167,11 @@ bool HidDevice::Read()
 
     if (!IsOpen() && OpenedForRead)
     {
-        throw std::exception("HidDevice not open for read.");
+        Open(true);
+        if (!IsOpen() && OpenedForRead)
+        {
+            throw std::exception("HidDevice cannot be opened for read.");
+        }
     }
 
     if (!ReadFile(device,
@@ -632,8 +636,11 @@ bool HidDevices::FindAllHidDevices(bool CloseAllDevices)
                 // Create a new HidDevice pointer 
                 HidDevicePtr hidDeviceInst = std::make_unique<HidDevice>(functionClassDeviceData->DevicePath);
                 hidDeviceInst->Open();
-                // Add new HidDevice to devices vector
-                devices.push_back(std::move(hidDeviceInst));
+                if (hidDeviceInst->IsOpen())
+                {
+                    // Add new HidDevice to devices vector
+                    devices.push_back(std::move(hidDeviceInst));
+                }
             }
         }
         i++;
