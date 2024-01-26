@@ -100,6 +100,11 @@ bool HidDevice::UnpackReport(charBufferPtr& ReportBuffer,
     return true;
 }
 
+TargetDevice HidDevice::getTargetInfo() const
+{
+    return TargetDevice(Attributes->VendorID, Attributes->ProductID, Caps->UsagePage, Caps->Usage);
+}
+
 bool HidDevice::IsTarget(int vid, int pid, int usagepage, int usagecode)
 {
     return Attributes->VendorID == vid &&
@@ -108,7 +113,7 @@ bool HidDevice::IsTarget(int vid, int pid, int usagepage, int usagecode)
         Caps->Usage == usagecode;
 }
 
-USAGE HidDevice::getKeyPress()
+USAGE HidDevice::getKeyPress() const
 {
     return (InputData.get())->ButtonData.Usages.front();
 }

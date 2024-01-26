@@ -24,6 +24,7 @@
 #include <iostream>
 #include <regex>
 #include "colors.h"
+ProgSettings::ProgSettings() : target{ 0,0,0,0 }, configFilename{} {}
 
 ProgSettings::ProgSettings(int argc, const char* argv[])
 {
@@ -74,7 +75,7 @@ std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
 {
     strm << MakeColorCode(Colors::Red) << "CONFIGURATION:" << ResetColors() << "\n\nTargetDevice:\n";
     strm << std::format("VID: {:#06x} PID: {:#06x}\nUsagePage : {:#04x} Usage: {:#04x}\n\n",
-                   ps.targetVID, ps.targetPID, ps.usagePage, ps.usageCode);
+                   ps.target.targetVID, ps.target.targetPID, ps.target.usagePage, ps.target.usageCode);
 
     strm << "# Macro Keys: " << ps.macrolist.size() << "\n\n";
 
@@ -105,41 +106,23 @@ std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
     return strm;
 }
 
-void ProgSettings::CreateBlank()
-{
-    // TODO: Add your implementation code here.
-    targetPID = 0x0d62;
-    targetVID = 0x1a1c;
-}
-
-unsigned short ProgSettings::getVID() const { return targetVID; }
-unsigned short ProgSettings::getPID() const { return targetPID; }
-unsigned short ProgSettings::getUsagePage() const { return usagePage; }
-unsigned short ProgSettings::getUsageCode() const { return usageCode; }
+unsigned short ProgSettings::getVID() const { return target.targetVID; }
+unsigned short ProgSettings::getPID() const { return target.targetPID; }
+unsigned short ProgSettings::getUsagePage() const { return target.usagePage; }
+unsigned short ProgSettings::getUsageCode() const { return target.usageCode; }
 std::string ProgSettings::getDescription(const short scancode) const
 {
     return this->macrolist.at(scancode).getDescription();
 }
 std::unordered_map<short, MacroAction> ProgSettings::getMacros() const { return macrolist; }
 
-bool ProgSettings::Save()
-{
-    return true;
-}
-
-void ProgSettings::setTarget(int vid, int pid, int up, int uc)
-{
-    targetVID = static_cast<unsigned short>(vid);
-    targetPID = static_cast<unsigned short>(pid);
-    usagePage = static_cast<unsigned short>(up);
-    usageCode = static_cast<unsigned short>(uc);
-}
-
 bool ProgSettings::Load(const std::string& filename)
 {
     using namespace libconfig;
 
     configFilename = filename;
+
+    libconfig::Config configuration;
 
     // Load and parse the file with libconfig
     try
@@ -161,8 +144,8 @@ bool ProgSettings::Load(const std::string& filename)
     try
     {
         // Extract targetdevice details from configuration
-        Setting& target = configuration.lookup(TARGET_DEVICE);
-        setTarget(target[VID], target[PID], target[USAGEPAGE], target[USAGECODE]);
+        Setting& trgt = configuration.lookup(TARGET_DEVICE);
+        target = { trgt[VID], trgt[PID], trgt[USAGEPAGE], trgt[USAGECODE] };
 
         // Extract macro information from configuration
         Setting& macros = configuration.lookup(MACROS);

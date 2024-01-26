@@ -168,6 +168,7 @@
     <ClInclude Include="include\colors.h" />
     <ClInclude Include="include\cxxopts.hpp" />
     <ClInclude Include="include\HidDevice.h" />
+    <ClInclude Include="include\TargetDevice.h" />
     <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\version-git.h" />
     <ClInclude Include="include\version.h" />

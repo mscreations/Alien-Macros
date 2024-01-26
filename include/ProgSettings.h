@@ -29,6 +29,8 @@
 #include <cxxopts.hpp>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include "TargetDevice.h"
 
 constexpr auto DEFAULT_CFG_FILENAME = "awmacros.cfg";
 
@@ -48,12 +50,15 @@ constexpr auto MACRO_KEY_DESCRIPTION = "macrodescription";
 
 class ProgSettings
 {
+    TargetDevice target;
+    std::unordered_map<short, MacroAction> macrolist;
+    std::string configFilename;
+
+    bool Load(const std::string& filename);
 public:
+    ProgSettings();
     ProgSettings(int argc, const char* argv[]);
-
-    friend std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps);
-
-    void CreateBlank();
+    ProgSettings(ProgSettings& ps);
 
     unsigned short getVID() const;
     unsigned short getPID() const;
@@ -62,18 +67,12 @@ public:
     std::string getDescription(const short scancode) const;
     std::unordered_map<short, MacroAction> getMacros() const;
 
-private:
-    unsigned short targetVID;
-    unsigned short targetPID;
-    unsigned short usagePage;
-    unsigned short usageCode;
-    void setTarget(int vid, int pid, int up, int uc);
+    // These are the known valid targets. 
+    inline static const std::unordered_set<TargetDevice, TargetDevice::HashFunction> knownDevices = {
+        { 0x0d62, 0x1a1c, 0x0c, 0x01 }      // Alienware m17 R4 w/ Per-key lighting
+    };
 
-    std::unordered_map<short, MacroAction> macrolist;
-    std::string configFilename;
-    libconfig::Config configuration;
-
-    bool Load(const std::string& filename);
+    friend std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps);
     bool Save();
 };
 

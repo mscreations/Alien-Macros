@@ -29,6 +29,7 @@
 #include <Windows.h>
 #include <hidsdi.h>
 #include <SetupAPI.h>
+#include "TargetDevice.h"
 
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -122,8 +123,9 @@ public:
     bool Read();
     bool Open(bool HasReadAccess = false, bool HasWriteAccess = false, bool IsOverlapped = false, bool IsExclusive = false);
     bool FillDevice();
+    TargetDevice getTargetInfo() const;
     bool IsTarget(int vid, int pid, int usagepage, int usagecode);
-    USAGE getKeyPress();
+    USAGE getKeyPress() const;
 
     friend std::ostream& operator<<(std::ostream& strm, const HidDevice& hd);
 };
