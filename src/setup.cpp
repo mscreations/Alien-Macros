@@ -43,7 +43,6 @@ std::unique_ptr<ProgSettings> Setup::invokeSetup()
 
     std::cout << std::endl;
 
-    bool valid = false;
     unsigned int response{ 0 };
 
     while (!AskResponse("Select device to target (Green are known devices)", 1, static_cast<unsigned int>(devices.size()), response)) {};

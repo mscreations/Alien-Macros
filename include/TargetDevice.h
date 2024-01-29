@@ -14,7 +14,7 @@ struct TargetDevice
 
     struct HashFunction
     {
-        std::size_t operator()(const TargetDevice& device) const;
+        size_t operator()(const TargetDevice& device) const;
     };
 
     bool operator==(const TargetDevice& other) const;

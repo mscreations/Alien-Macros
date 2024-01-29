@@ -155,6 +155,7 @@
   <ItemGroup>
     <ClCompile Include="src\Alien-Macros.cpp" />
     <ClCompile Include="src\HidDevice.cpp" />
+    <ClCompile Include="src\RegistryHelper.cpp" />
     <ClCompile Include="src\setup.cpp" />
     <ClCompile Include="src\TargetDevice.cpp" />
     <ClCompile Include="src\Utils.cpp" />
@@ -169,6 +170,7 @@
   <ItemGroup>
     <ClInclude Include="include\colors.h" />
     <ClInclude Include="include\HidDevice.h" />
+    <ClInclude Include="include\RegistryHelper.h" />
     <ClInclude Include="include\setup.h" />
     <ClInclude Include="include\TargetDevice.h" />
     <ClInclude Include="include\Utils.h" />
