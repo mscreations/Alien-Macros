@@ -23,21 +23,22 @@
 #include "ProgSettings.h"
 #include "HidDevice.h"
 #include "MacroHandler.h"
+#include "setup.h"
 
 int main(int argc, const char* argv[])
 {
+    std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
 
     ProgSettings ps{ argc, argv };
     MacroHandler mh(ps.getMacros());
 
-    std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
 
-#ifdef _DEBUG
-    std::cout << ps << std::endl;
-#endif
+    //#ifdef _DEBUG
+    //    std::cout << ps << std::endl;
+    //#endif
 
     HidDevices devices{};
-    devices.FindAllHidDevices();
+    devices.FindAllHidDevices(true);
 
     const std::vector<HidDevicePtr>& list = devices.getDevices();
 

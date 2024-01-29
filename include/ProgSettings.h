@@ -20,13 +20,9 @@
 
 #pragma once
 
- // Following option required so cxxopts uses static_cast instead of dynamic_cast which fails with int->short
-#define CXXOPTS_NO_RTTI
-
 #include "libconfig.h++"
 #include "MacroAction.h"
 #include "Utils.h"
-#include <cxxopts.hpp>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -67,12 +63,12 @@ public:
     std::string getDescription(const short scancode) const;
     std::unordered_map<short, MacroAction> getMacros() const;
 
+    friend std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps);
+    friend class Setup;     // Setup needs access to private members
+
     // These are the known valid targets. 
     inline static const std::unordered_set<TargetDevice, TargetDevice::HashFunction> knownDevices = {
         { 0x0d62, 0x1a1c, 0x0c, 0x01 }      // Alienware m17 R4 w/ Per-key lighting
     };
-
-    friend std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps);
-    bool Save();
 };
 

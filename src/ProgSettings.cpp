@@ -21,43 +21,64 @@
 #include "ProgSettings.h"
 #include <format>
 #include <iomanip>
+#include <fstream>
 #include <iostream>
 #include <regex>
+#include <limits>
 #include "colors.h"
+#include "HidDevice.h"
+#include "setup.h"
+
 ProgSettings::ProgSettings() : target{ 0,0,0,0 }, configFilename{} {}
 
 ProgSettings::ProgSettings(int argc, const char* argv[])
 {
-    cxxopts::Options options("Alien-Macros", "Macro key translator");
-
-    options.add_options()
-        ("v,vid", "Target VID", cxxopts::value<int>())
-        ("p,pid", "Target PID", cxxopts::value<int>())
-        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value(DEFAULT_CFG_FILENAME))
-        ("h,help", "Help information")
-        ;
-
     std::string configFile{};
-    short vid{ 0 }, pid{ 0 };
 
-    try
+    for (int i = 1; i < argc; i++)
     {
-        auto result = options.parse(argc, argv);
-        if (result.count("help"))
+        std::string value = argv[i];
+        if (value.ends_with(".cfg"))
         {
-            std::cout << options.help() << std::endl;
-            exit(true);
+            configFile = value;
+            break;
         }
-
-        configFile = result["config"].as<std::string>();
-
-        if (result.count("vid")) { vid = result["vid"].as<short>(); }
-        if (result.count("pid")) { pid = result["pid"].as<short>(); }
     }
-    catch (const std::exception& exc)
+
+    if (configFile == "") { configFile = DEFAULT_CFG_FILENAME; }
+
+    std::ifstream file(configFile);
+    if (file)
     {
-        std::cerr << "Command line parsing exception: " << exc.what() << std::endl;
-        exit(false);
+        if (!file.is_open())
+        {
+            std::cerr << "Config file exists, but is not readable." << std::endl;
+            exit(false);
+        }
+        file.close();
+    }
+    else
+    {
+        char response;
+        std::cerr << "Config file does not exists." << std::endl;
+        std::cerr << "Do you want to run the setup function? [Y/n]: ";
+        std::cin >> std::noskipws >> response;
+
+        if (response == 'y' || response == 'Y' || response == '\n')
+        {
+            auto newSetup = Setup::invokeSetup();
+            target = newSetup->target;
+            if (!newSetup->macrolist.empty())
+            {
+                macrolist = newSetup->macrolist;
+            }
+            return; // TODO this should save the new configuration now that we have it created and in theory tested it.
+        }
+        else
+        {
+            std::cerr << "No valid configuration. Exiting." << std::endl;
+            exit(false);
+        }
     }
 
     if (!Load(configFile))
@@ -65,15 +86,21 @@ ProgSettings::ProgSettings(int argc, const char* argv[])
         std::cerr << "Configuration file could not be loaded" << std::endl;
         throw std::invalid_argument("Configuration file could not be loaded");
     }
+}
 
-    // if command line arguments for VID and PID are different than configuration, use them instead.
-    if (vid != 0 && targetVID != vid) { targetVID = vid; }
-    if (pid != 0 && targetPID != pid) { targetPID = pid; }
+ProgSettings::ProgSettings(ProgSettings& ps)
+{
+    target = ps.target;
+
+    if (!ps.macrolist.empty())
+    {
+        macrolist = ps.macrolist;
+    }
 }
 
 std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
 {
-    strm << MakeColorCode(Colors::Red) << "CONFIGURATION:" << ResetColors() << "\n\nTargetDevice:\n";
+    strm << Colors::Red << "CONFIGURATION:" << Colors::Reset << "\n\nTargetDevice:\n";
     strm << std::format("VID: {:#06x} PID: {:#06x}\nUsagePage : {:#04x} Usage: {:#04x}\n\n",
                    ps.target.targetVID, ps.target.targetPID, ps.target.usagePage, ps.target.usageCode);
 
