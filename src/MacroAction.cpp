@@ -22,6 +22,12 @@
 
 using namespace std::string_literals;   // Required for string literal suffix
 
+/// <summary>
+/// Sets the payload values
+/// </summary>
+/// <param name="c">char value payload</param>
+/// <param name="vk">Virtual Key code</param>
+/// <param name="s">std::string payload</param>
 void MacroAction::SetPayload(const char c, const short vk, const std::string& s)
 {
     this->_charPayload = c;
@@ -29,6 +35,9 @@ void MacroAction::SetPayload(const char c, const short vk, const std::string& s)
     this->_strPayload = s;
 }
 
+/// <summary>
+/// Creates an indeterminate action with no payload and an Invalid action code
+/// </summary>
 MacroAction::MacroAction()
 {
     SetPayload(NULL, NULL, ""s);
@@ -36,6 +45,11 @@ MacroAction::MacroAction()
     this->ActionCode = MacroActionCode::Invalid;
 }
 
+/// <summary>
+/// Create a char action and loads the payload to the proper variable.
+/// </summary>
+/// <param name="newPayload">Value to be loaded into payload</param>
+/// <param name="desc">Description for this action</param>
 MacroAction::MacroAction(const char newPayload, const std::string& desc)
 {
     this->description = desc;
@@ -43,6 +57,11 @@ MacroAction::MacroAction(const char newPayload, const std::string& desc)
     SetPayload(newPayload, NULL, ""s);
 }
 
+/// <summary>
+/// Create a std::string action and loads the payload to the proper variable.
+/// </summary>
+/// <param name="newPayload">std::string value to be loaded</param>
+/// <param name="desc">Description for this action</param>
 MacroAction::MacroAction(const std::string& newPayload, const std::string& desc)
 {
     this->description = desc;
@@ -50,6 +69,11 @@ MacroAction::MacroAction(const std::string& newPayload, const std::string& desc)
     SetPayload(NULL, NULL, newPayload);
 }
 
+/// <summary>
+/// Creates a Virtual key action 
+/// </summary>
+/// <param name="newPayload">Value to be loaded to the proper variable</param>
+/// <param name="desc">Description for this action</param>
 MacroAction::MacroAction(const short newPayload, const std::string& desc)
 {
     this->description = desc;
@@ -57,11 +81,19 @@ MacroAction::MacroAction(const short newPayload, const std::string& desc)
     SetPayload(NULL, newPayload, ""s);
 }
 
+/// <summary>
+/// Retrieves action enum code
+/// </summary>
+/// <returns>MacroActionCode representing action to be performed</returns>
 MacroActionCode MacroAction::getActionCode() const
 {
     return this->ActionCode;
 }
 
+/// <summary>
+/// If this is a char action, returns the char variable
+/// </summary>
+/// <returns>Char payload if action is Char. Blank otherwise.</returns>
 char MacroAction::getChar() const
 {
     if (this->ActionCode == MacroActionCode::Char)
@@ -71,6 +103,10 @@ char MacroAction::getChar() const
     return {};
 }
 
+/// <summary>
+/// If this is a string action, returns the string variable
+/// </summary>
+/// <returns>String payload if action is a string. Blank otherwise.</returns>
 std::string MacroAction::getString() const
 {
     if (this->ActionCode == MacroActionCode::String)
@@ -80,6 +116,10 @@ std::string MacroAction::getString() const
     return {};
 }
 
+/// <summary>
+/// If this is a virtual key action, returns the virtual key variable
+/// </summary>
+/// <returns>Virtual Key payload if action is VirtualKey. Blank (0) otherwise.</returns>
 short MacroAction::getVK() const
 {
     if (this->ActionCode == MacroActionCode::VirtualKey)
@@ -89,6 +129,10 @@ short MacroAction::getVK() const
     return {};
 }
 
+/// <summary>
+/// Retrieves description for this action
+/// </summary>
+/// <returns>std::string description for this action</returns>
 std::string MacroAction::getDescription() const
 {
     return this->description;

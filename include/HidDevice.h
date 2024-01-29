@@ -34,6 +34,9 @@
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
 
+ /// <summary>
+ /// Structure to hold data from HID device
+ /// </summary>
 typedef struct _HID_DATA
 {
     bool                                IsButtonData;
@@ -71,6 +74,9 @@ using HidButtonCaps = std::unique_ptr<HIDP_BUTTON_CAPS[]>;
 using HidValueCaps = std::unique_ptr<HIDP_VALUE_CAPS[]>;
 using charBufferPtr = std::unique_ptr<char[]>;
 
+/// <summary>
+/// HidDevice object representing a device on the system to read HID reports from
+/// </summary>
 class HidDevice
 {
     std::string                             DevicePath;
@@ -132,15 +138,22 @@ public:
 
 using HidDevicePtr = std::unique_ptr<HidDevice>;
 
+/// <summary>
+/// HidDevices object that contains a vector of multiple unique_ptrs to HidDevices.
+/// </summary>
 class HidDevices
 {
     std::vector<HidDevicePtr> devices;
 
 public:
     HidDevices();
+    size_t size();
     bool FindAllHidDevices(bool CloseAllDevices = false);
     std::vector<HidDevicePtr>& getDevices();
     const std::vector<HidDevicePtr>& getDevices() const;
+
+    HidDevice& operator[](int pos);
+    const HidDevice& operator[](int pos) const;
 
     friend std::ostream& operator<<(std::ostream& strm, const HidDevices& hds);
 };

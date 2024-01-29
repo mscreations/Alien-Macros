@@ -21,6 +21,9 @@
 #pragma once
 #include <string>
 
+ /// <summary>
+ /// Action to be performed by MacroAction
+ /// </summary>
 enum class MacroActionCode : int
 {
     Invalid,
@@ -29,6 +32,10 @@ enum class MacroActionCode : int
     String
 };
 
+/// <summary>
+/// Object that contains the actions to be performed when a macro key is pressed.
+/// </summary>
+/// <remarks>Needs to be expanded in a future version</remarks>
 class MacroAction
 {
     MacroActionCode ActionCode;

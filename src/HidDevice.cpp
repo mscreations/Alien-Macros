@@ -19,7 +19,18 @@
  */
 
 #include "HidDevice.h"
+#include <stdexcept>
 
+ /// <summary>
+ /// Unpacks HID report into the specified buffer
+ /// </summary>
+ /// <param name="ReportBuffer">Buffer to read from</param>
+ /// <param name="ReportBufferLength">Length of read buffer</param>
+ /// <param name="ReportType">Report type</param>
+ /// <param name="Data">Output buffer</param>
+ /// <param name="DataLength">Output buffer length</param>
+ /// <param name="Ppd">Preparsed data</param>
+ /// <returns></returns>
 bool HidDevice::UnpackReport(charBufferPtr& ReportBuffer,
                              unsigned short ReportBufferLength,
                              HIDP_REPORT_TYPE ReportType,
@@ -100,11 +111,24 @@ bool HidDevice::UnpackReport(charBufferPtr& ReportBuffer,
     return true;
 }
 
+/// <summary>
+/// Returns an object representing the target info for this device. This gets matched against
+/// the known devices.
+/// </summary>
+/// <returns>TargetDevice object with parameters from this HidDevice</returns>
 TargetDevice HidDevice::getTargetInfo() const
 {
     return TargetDevice(Attributes->VendorID, Attributes->ProductID, Caps->UsagePage, Caps->Usage);
 }
 
+/// <summary>
+/// Checks if HidDevice is the target device. Likely going to be deprecated.
+/// </summary>
+/// <param name="vid">Vendor ID</param>
+/// <param name="pid">Product ID</param>
+/// <param name="usagepage">Usage Page</param>
+/// <param name="usagecode">Usage Code</param>
+/// <returns>True if current device matches entered device details / false otherwise</returns>
 bool HidDevice::IsTarget(int vid, int pid, int usagepage, int usagecode)
 {
     return Attributes->VendorID == vid &&
@@ -113,11 +137,25 @@ bool HidDevice::IsTarget(int vid, int pid, int usagepage, int usagecode)
         Caps->Usage == usagecode;
 }
 
+/// <summary>
+/// Retrieves the first usage code received after a read operation
+/// </summary>
+/// <remarks>This probably should return the entire vector, but so far I have only 
+/// required the first element for this project to work</remarks>
+/// <returns>USAGE key scan code.</returns>
 USAGE HidDevice::getKeyPress() const
 {
     return (InputData.get())->ButtonData.Usages.front();
 }
 
+/// <summary>
+/// Load's a string using the specified function. This is intended for the HidD_GetManufacturerString
+/// and HidD_GetProductString. Automatically loads the data into a wide string and then converts it
+/// into a std::string.
+/// </summary>
+/// <param name="func">Function to call. Should be HidD_GetManufacturerString or
+/// HidD_GetProductString</param>
+/// <returns>std::string received from function call.</returns>
 std::string HidDevice::LoadHidString(const std::function<BOOLEAN(HANDLE, PVOID, ULONG)> func) const
 {
     auto wideString = std::make_unique<wchar_t[]>(256);
@@ -131,8 +169,17 @@ std::string HidDevice::LoadHidString(const std::function<BOOLEAN(HANDLE, PVOID, 
     return {};
 }
 
+/// <summary>
+/// Convenience function to set multiple data parameters
+/// </summary>
+/// <param name="ptr">Pointer to HidDevice array</param>
+/// <param name="offset">Offset into array</param>
+/// <param name="up">Usage Page</param>
+/// <param name="usage">Usage Code</param>
+/// <param name="rid">ReportID</param>
 void HidDevice::SetHidData(HidDataPtr& ptr, const unsigned long offset, const USAGE up, const USAGE usage, const unsigned long rid)
 {
+    // TODO Should verify offset is within range.
     (ptr.get()[offset]).IsButtonData = false;
     (ptr.get()[offset]).Status = HIDP_STATUS_SUCCESS;
     (ptr.get()[offset]).UsagePage = up;
@@ -140,6 +187,10 @@ void HidDevice::SetHidData(HidDataPtr& ptr, const unsigned long offset, const US
     (ptr.get()[offset]).ReportID = rid;
 }
 
+/// <summary>
+/// Creates a new HidDevice from the DevicePath
+/// </summary>
+/// <param name="DevicePath">The Device Path</param>
 HidDevice::HidDevice(const std::string& DevicePath)
 {
     this->DevicePath = DevicePath;
@@ -149,8 +200,14 @@ HidDevice::HidDevice(const std::string& DevicePath)
     this->Caps = std::make_unique<HIDP_CAPS>();
 }
 
+/// <summary>
+/// HidDevice destructor. Closes handle if opened.
+/// </summary>
 HidDevice::~HidDevice() { Close(); }
 
+/// <summary>
+/// Closes HidDevice handle. Sets handle to invalid handle value and resets opened flags.
+/// </summary>
 void HidDevice::Close()
 {
     if (IsOpen())
@@ -161,11 +218,23 @@ void HidDevice::Close()
     }
 }
 
+/// <summary>
+/// Checks if HidDevice handle is an invalid value indicating device closed.
+/// </summary>
+/// <returns>true if handle is valid / false otherwise</returns>
 bool HidDevice::IsOpen() const
 {
     return device != INVALID_HANDLE_VALUE;
 }
 
+
+/// <summary>
+/// Synchronous read of HidDevice object. Checks if open and if is not open,
+/// reopens with read permissions. If cannot open, throws a runtime_error exception.
+/// The read data is inserted into the InputData buffer.
+/// </summary>
+/// <exception cref="std::runtime_error">Thrown if HidDevice cannot be opened</exception>
+/// <returns>true if read was successful / false otherwise</returns>
 bool HidDevice::Read()
 {
     unsigned long bytesRead;
@@ -175,7 +244,7 @@ bool HidDevice::Read()
         Open(true);
         if (!IsOpen() && OpenedForRead)
         {
-            throw std::exception("HidDevice cannot be opened for read.");
+            throw std::runtime_error("HidDevice cannot be opened for read.");
         }
     }
 
@@ -197,6 +266,17 @@ bool HidDevice::Read()
                         Ppd);
 }
 
+
+/// <summary>
+/// Attempts to open the HidDevice with the chosen permissions.
+/// If HidDevice is already open, will close the device first before attempting
+/// to reopen with the specified permissions
+/// </summary>
+/// <param name="HasReadAccess">Open with read access</param>
+/// <param name="HasWriteAccess">Open with write access (NOT IMPLEMENTED)</param>
+/// <param name="IsOverlapped">Open for asynchronous operation (NOT IMPLEMENTED)</param>
+/// <param name="IsExclusive">Carryover from hclient sample. Not sure what this does. (NOT IMPLEMENTED)</param>
+/// <returns>true if HidDevice opened without issue / false otherwise</returns>
 bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped, bool IsExclusive)
 {
     // If HidDevice is already open (likely with other permissions), close it first.
@@ -235,6 +315,10 @@ bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped,
     return true;
 }
 
+/// <summary>
+/// Fills HidDevice class with data from the system
+/// </summary>
+/// <returns>true on success / false on any errors</returns>
 bool HidDevice::FillDevice()
 {
     unsigned short numCaps{ 0 };
@@ -569,11 +653,22 @@ bool HidDevice::FillDevice()
     return true;
 }
 
-HidDevices::HidDevices()
-{
-    devices.clear();
-}
+/// <summary>
+/// Initializes a blank HidDevices object. Clears the devices vector.
+/// </summary>
+HidDevices::HidDevices() { devices.clear(); }
 
+/// <summary>
+/// Gets the size of the devices vector
+/// </summary>
+/// <returns>The current size of the devices vector</returns>
+size_t HidDevices::size() { return devices.size(); }
+
+/// <summary>
+/// Finds all HID devices that can be opened on the system. Adds them all to the devices vector.
+/// </summary>
+/// <param name="bool CloseAllDevices">If true, closes all devices after discovery</param>
+/// <returns>true if success/false if any errors encountered</returns>
 bool HidDevices::FindAllHidDevices(bool CloseAllDevices)
 {
     HDEVINFO hardwareDeviceInfo{};
@@ -662,20 +757,56 @@ bool HidDevices::FindAllHidDevices(bool CloseAllDevices)
     return true;
 }
 
+/// <summary>
+/// Retrieves the device list
+/// </summary>
+/// <returns>Reference to a vector containing unique_ptrs to each HidDevice</returns>
 std::vector<HidDevicePtr>& HidDevices::getDevices()
 {
     return devices;
 }
 
+/// <summary>
+/// Retrieves the device list (constant)
+/// </summary>
+/// <returns>constant Reference to a vector containing unique_ptrs to each HidDevice</returns>
 const std::vector<HidDevicePtr>& HidDevices::getDevices() const
 {
     return devices;
 }
 
+/// <summary>
+/// Subscript operator for HidDevices
+/// </summary>
+/// <param name="idx">Index to retrieve</param>
+/// <exception cref="std::out_of_range">Thrown if index is out of range of available devices</exception>
+/// <returns>Reference to HidDevice in device list at specified index</returns>
+HidDevice& HidDevices::operator[](int idx)
+{
+    if (idx < 0 || idx >= devices.size())
+    {
+        throw std::out_of_range("HidDevices[]: out of range");
+    }
+    return *devices[idx].get();
+}
+
+/// <summary>constant subscript operator for HidDevices</summary>
+/// <param name='idx'>index to retrieve</param>
+/// <exception cref="std::out_of_range">Thrown if index is out of range of available devices</exception>
+/// <returns>constant reference to HidDevice in device list at specified index</returns>
+const HidDevice& HidDevices::operator[](int idx) const
+{
+    if (idx < 0 || idx >= devices.size())
+    {
+        throw std::out_of_range("const HidDevices[]: out of range");
+    }
+    return *devices[idx].get();
+}
+
 std::ostream& operator<<(std::ostream& strm, const HidDevice& hd)
 {
 
-    strm << std::format("{:<50} VID: {:#06x} PID: {:#06x} UsagePage: {:#04x}, Usage: {:#04x}\n",
+    strm << std::format("{:<50} VID: {:#06x} PID: {:#06x} UsagePage: {:#04x} Usage: {:#04x}\n",
                         hd.ManufacturerString.empty() ? "Unknown USB HID Device" : hd.ManufacturerString + " " + hd.ProductString,
                         hd.Attributes->VendorID,
                         hd.Attributes->ProductID,

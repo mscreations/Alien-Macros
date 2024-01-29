@@ -23,6 +23,9 @@
 #include "HidDevice.h"
 #include "MacroAction.h"
 
+ /// <summary>
+ /// Processes the macro key's scancode and performs the action requested.
+ /// </summary>
 class MacroHandler
 {
 public:
