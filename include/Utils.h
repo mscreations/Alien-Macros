@@ -26,8 +26,13 @@
 #error "NAME CLASH"
 #endif
 
-namespace Utils
+class Utils
 {
+    static void ResetCin();
+    static bool ConvertToNumeric(const std::string& userInput, unsigned int& response);
+
+public:
+
     enum class VirtualKeys : short
     {
         VK_CANCEL = 0x03, VK_BACK = 0x08, VK_TAB = 0x09, VK_CLEAR = 0x0C, VK_RETURN = 0x0D, VK_PAUSE = 0x13, VK_CAPITAL = 0x14,
@@ -46,8 +51,12 @@ namespace Utils
         VK_ABNT_C1, VK_ABNT_C2, VK_OEM_4 = 0xDB, VK_OEM_5, VK_OEM_6, VK_OEM_7,
     };
 
-    std::string GetKeyName(const short vk);
+    static std::string GetKeyName(const short vk);
 
-    bool AskResponse(const std::string& message, const unsigned int firstOption, const unsigned int lastOption, unsigned int& response);
-    bool AskResponse(const std::string& message, bool yesDefault);
-}
+    static bool AskResponse(const std::string& message, unsigned int& response, const unsigned int maxValue = UINT_MAX);
+    static bool AskResponse(const std::string& message, const unsigned int firstOption, const unsigned int lastOption, unsigned int& response);
+    static bool AskResponse(const std::string& message, bool yesDefault);
+    static bool AskResponse(const std::string& message, std::string& response);
+};
+
+

@@ -134,10 +134,21 @@ unsigned short ProgSettings::getVID() const { return target.targetVID; }
 unsigned short ProgSettings::getPID() const { return target.targetPID; }
 unsigned short ProgSettings::getUsagePage() const { return target.usagePage; }
 unsigned short ProgSettings::getUsageCode() const { return target.usageCode; }
+
+/// <summary>
+/// Retrieves the description of the specified macro scancode. Returns generic message if macro doesn't exist.
+/// </summary>
+/// <param name="scancode">Macro scan code to lookup</param>
+/// <returns>std::string Description or generic response</returns>
 std::string ProgSettings::getDescription(const short scancode) const
 {
+    if (macrolist.find(scancode) == macrolist.end())
+    {
+        return "Macro missing";
+    }
     return this->macrolist.at(scancode).getDescription();
 }
+
 std::unordered_map<short, MacroAction> ProgSettings::getMacros() const { return macrolist; }
 
 bool ProgSettings::Load(const std::string& filename)

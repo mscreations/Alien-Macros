@@ -2,7 +2,7 @@
 
 namespace Colors
 {
-    constexpr auto ClearScreen = "\033[2J";
+    constexpr auto ClearScreen = "\033[1;1H\033[2J";
     constexpr auto CursorPreviousLine = "\033[F\033[J";
     constexpr auto Reset = "\033[0m";
     constexpr auto Red = "\033[31m";
