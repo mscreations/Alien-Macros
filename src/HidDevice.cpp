@@ -158,13 +158,13 @@ USAGE HidDevice::getKeyPress() const
 /// <returns>std::string received from function call.</returns>
 std::string HidDevice::LoadHidString(const std::function<BOOLEAN(HANDLE, PVOID, ULONG)> func) const
 {
-    auto wideString = std::make_unique<wchar_t[]>(256);
-    if (func(device, wideString.get(), 256))
+    std::wstring wideString(256, 0);
+    if (func(device, wideString.data(), 256))
     {
-        int sizeRequired = WideCharToMultiByte(CP_UTF8, 0, wideString.get(), -1, nullptr, 0, NULL, NULL);
-        auto charString = std::make_unique<char[]>(sizeRequired);
-        WideCharToMultiByte(CP_UTF8, 0, wideString.get(), -1, charString.get(), sizeRequired, NULL, NULL);
-        return std::string(charString.get());
+        int sizeRequired = WideCharToMultiByte(CP_UTF8, 0, wideString.data(), -1, nullptr, 0, NULL, NULL);
+        std::string charString(sizeRequired, 0);
+        WideCharToMultiByte(CP_UTF8, 0, wideString.data(), -1, charString.data(), sizeRequired, NULL, NULL);
+        return charString;
     }
     return {};
 }
