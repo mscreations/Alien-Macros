@@ -1,22 +1,8 @@
 #include <iostream>
-
 #include <iomanip>
 #include "setup.h"
+#include "Utils.h"
 #include "colors.h"
-
-bool Setup::AskResponse(const std::string& message, const unsigned int firstOption, const unsigned int lastOption, unsigned int& response)
-{
-    std::cout << std::format("{} [{} - {}]: ", message, firstOption, lastOption);
-    std::cin >> std::skipws >> response;
-
-    if (response < firstOption || response > lastOption)
-    {
-        response = -1;          // Invalid value
-        std::cout << Colors::CursorPreviousLine;    // Move cursor back to start of line 
-        return false;
-    }
-    return true;
-}
 
 void Setup::OutputDeviceList(const HidDevices& devices)
 {
@@ -45,7 +31,7 @@ std::unique_ptr<ProgSettings> Setup::invokeSetup()
 
     unsigned int response{ 0 };
 
-    while (!AskResponse("Select device to target (Green are known devices)", 1, static_cast<unsigned int>(devices.size()), response)) {};
+    while (!Utils::AskResponse("Select device to target (Green are known devices)", 1, static_cast<unsigned int>(devices.size()), response)) {};
 
     std::cout << "Selected Target device:\n" << devices[response - 1].getTargetInfo() << std::endl;
 

@@ -59,12 +59,9 @@ ProgSettings::ProgSettings(int argc, const char* argv[])
     }
     else
     {
-        char response;
         std::cerr << "Config file does not exists." << std::endl;
-        std::cerr << "Do you want to run the setup function? [Y/n]: ";
-        std::cin >> std::noskipws >> response;
 
-        if (response == 'y' || response == 'Y' || response == '\n')
+        if (Utils::AskResponse("Do you want to run the setup function?", /*yesDefault = */ true))
         {
             auto newSetup = Setup::invokeSetup();
             target = newSetup->target;
@@ -115,7 +112,7 @@ std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
         {
             case MacroActionCode::VirtualKey:
                 strm << "Virtual Key Action\n";
-                strm << std::format("    Payload: {:s}\n\n", GetKeyName(action.getVK()));
+                strm << std::format("    Payload: {:s}\n\n", Utils::GetKeyName(action.getVK()));
                 break;
             case MacroActionCode::Char:
                 strm << "Char Action\n";
