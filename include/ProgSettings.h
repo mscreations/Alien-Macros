@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "TargetDevice.h"
+#include "HidDevice.h"
 
 constexpr auto DEFAULT_CFG_FILENAME = "awmacros.cfg";
 
@@ -47,6 +48,7 @@ constexpr auto MACRO_KEY_DESCRIPTION = "macrodescription";
 class ProgSettings
 {
     TargetDevice target;
+    HidDevicePtr device;
     std::unordered_map<short, MacroAction> macrolist;
     std::string configFilename;
 

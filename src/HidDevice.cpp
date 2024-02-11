@@ -201,16 +201,26 @@ bool HidDevice::ReadOverlapped(std::unique_ptr<OVERLAPPED>& overlap)
     bool readStatus{ false };
     unsigned long bytesRead{ 0 };
 
+    // Execute the read and save return code to determine how to proceed
     readStatus = ReadFile(device,
                           InputReportBuffer.get(),
                           Caps->InputReportByteLength,
                           &bytesRead,
                           overlap.get());
 
+    // If readStatus is false, then one of two cases occurred:
+    // 1. Readfile call succeeded, but the read is an overlapped one. Here,
+    //      return true to indicate read successful. However, the calling
+    //      thread should be blocked on the completion event which means
+    //      it will continue until the read actually completes.
+    // 2. The readfile call failed for some unknown reason. In this case,
+    //      return code will be false
     if (!readStatus)
     {
         return (GetLastError() == ERROR_IO_PENDING);
     }
+    // If readStatus is true, then the Readfile call completed synchronously.
+    //   Signal the completion event so the calling thread knows it can continue
     else
     {
         SetEvent(overlap->hEvent);
@@ -248,30 +258,37 @@ bool HidDevice::ReadAsyncThreadProc(unsigned int maxCharToRead, std::atomic<bool
 
     bool readResult{ false };
     unsigned long numReadsDone{ 0 };
-    unsigned long waitStatus{ 0 };
+    unsigned long waitStatus;
     unsigned long bytesTransferred{ 0 };
 
+    // loop for reading until termination condition or reaching maxCharToRead
     do
     {
-        // Create a unique_ptr to an OVERLAPPED structure
+        // Create a unique_ptr to an OVERLAPPED structure. This is a unique_ptr
+        // so it's scope is only for a single loop. That way it gets recreated
+        // and rezeroed each time through the loop.
         std::unique_ptr<OVERLAPPED> overlap =
             std::make_unique<OVERLAPPED>(OVERLAPPED{ .hEvent = completionEvent });
 
+        // Perform an overlapped read
         readResult = ReadOverlapped(overlap);
 
-        if (!readResult) { break; }
+        if (!readResult) { return false; }
 
+        // Wait for the completion of the read or termination signal
         while (!terminateThread.load())
         {
             waitStatus = WaitForSingleObject(completionEvent, READ_THREAD_TIMEOUT);
 
             if (waitStatus == WAIT_OBJECT_0)
             {
+                // Retrieve the result of the overlapped read operation 
                 readResult = GetOverlappedResult(device, overlap.get(), &bytesTransferred, true);
                 break;
             }
         }
 
+        // If termination signal not received and read successful, process the input data.
         if (!terminateThread.load())
         {
             numReadsDone++;
@@ -396,7 +413,7 @@ bool HidDevice::ReadAsync(unsigned int maxCharToRead)
     std::atomic<bool> terminateThread(false);
 
     // Set the SIGINT handler to set the terminateThread atomic to true
-    terminateHandler = [&terminateThread](int signal)
+    terminateHandler = [&terminateThread](int)
         {
             terminateThread.store(true);
         };
@@ -944,27 +961,14 @@ const std::vector<HidDevicePtr>& HidDevices::getDevices() const
 /// </summary>
 /// <param name="idx">Index to retrieve</param>
 /// <exception cref="std::out_of_range">Thrown if index is out of range of available devices</exception>
-/// <returns>Reference to HidDevice in device list at specified index</returns>
-HidDevice& HidDevices::operator[](int idx)
+/// <returns>Unique_ptr to HidDevice in device list at specified index</returns>
+std::unique_ptr<HidDevice> HidDevices::operator[](int idx)
 {
     if (idx < 0 || idx >= devices.size())
     {
         throw std::out_of_range("HidDevices[]: out of range");
     }
-    return *devices[idx].get();
-}
-
-/// <summary>constant subscript operator for HidDevices</summary>
-/// <param name='idx'>index to retrieve</param>
-/// <exception cref="std::out_of_range">Thrown if index is out of range of available devices</exception>
-/// <returns>constant reference to HidDevice in device list at specified index</returns>
-const HidDevice& HidDevices::operator[](int idx) const
-{
-    if (idx < 0 || idx >= devices.size())
-    {
-        throw std::out_of_range("const HidDevices[]: out of range");
-    }
-    return *devices[idx].get();
+    return std::move(devices.at(idx));
 }
 
 std::ostream& operator<<(std::ostream& strm, const HidDevice& hd)

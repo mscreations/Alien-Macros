@@ -139,6 +139,7 @@ public:
     USAGE getKeyPress() const;
 
     friend std::ostream& operator<<(std::ostream& strm, const HidDevice& hd);
+    friend class setup;
 };
 
 using HidDevicePtr = std::unique_ptr<HidDevice>;
@@ -157,8 +158,7 @@ public:
     std::vector<HidDevicePtr>& getDevices();
     const std::vector<HidDevicePtr>& getDevices() const;
 
-    HidDevice& operator[](int pos);
-    const HidDevice& operator[](int pos) const;
+    std::unique_ptr<HidDevice> operator[](int pos);
 
     friend std::ostream& operator<<(std::ostream& strm, const HidDevices& hds);
 };

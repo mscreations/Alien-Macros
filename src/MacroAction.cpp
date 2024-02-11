@@ -19,30 +19,16 @@
  */
 
 #include "MacroAction.h"
+#include "Utils.h"
 
-using namespace std::string_literals;   // Required for string literal suffix
-
-/// <summary>
-/// Sets the payload values
-/// </summary>
-/// <param name="c">char value payload</param>
-/// <param name="vk">Virtual Key code</param>
-/// <param name="s">std::string payload</param>
-void MacroAction::SetPayload(const char c, const short vk, const std::string& s)
+ /// <summary>
+ /// Creates an indeterminate action with no payload and an Invalid action code
+ /// </summary>
+MacroAction::MacroAction(const std::string& desc)
 {
-    this->_charPayload = c;
-    this->_vkPayload = vk;
-    this->_strPayload = s;
-}
-
-/// <summary>
-/// Creates an indeterminate action with no payload and an Invalid action code
-/// </summary>
-MacroAction::MacroAction()
-{
-    SetPayload(NULL, NULL, ""s);
-    this->description = "";
-    this->ActionCode = MacroActionCode::Invalid;
+    payload = "";
+    description = desc;
+    ActionCode = MacroActionCode::Invalid;
 }
 
 /// <summary>
@@ -52,9 +38,9 @@ MacroAction::MacroAction()
 /// <param name="desc">Description for this action</param>
 MacroAction::MacroAction(const char newPayload, const std::string& desc)
 {
-    this->description = desc;
-    this->ActionCode = MacroActionCode::Char;
-    SetPayload(newPayload, NULL, ""s);
+    description = desc;
+    ActionCode = MacroActionCode::Char;
+    payload = newPayload;
 }
 
 /// <summary>
@@ -64,9 +50,9 @@ MacroAction::MacroAction(const char newPayload, const std::string& desc)
 /// <param name="desc">Description for this action</param>
 MacroAction::MacroAction(const std::string& newPayload, const std::string& desc)
 {
-    this->description = desc;
-    this->ActionCode = MacroActionCode::String;
-    SetPayload(NULL, NULL, newPayload);
+    description = desc;
+    ActionCode = MacroActionCode::String;
+    payload = newPayload;
 }
 
 /// <summary>
@@ -76,9 +62,9 @@ MacroAction::MacroAction(const std::string& newPayload, const std::string& desc)
 /// <param name="desc">Description for this action</param>
 MacroAction::MacroAction(const short newPayload, const std::string& desc)
 {
-    this->description = desc;
-    this->ActionCode = MacroActionCode::VirtualKey;
-    SetPayload(NULL, newPayload, ""s);
+    description = desc;
+    ActionCode = MacroActionCode::VirtualKey;
+    payload = newPayload;
 }
 
 /// <summary>
@@ -87,7 +73,7 @@ MacroAction::MacroAction(const short newPayload, const std::string& desc)
 /// <returns>MacroActionCode representing action to be performed</returns>
 MacroActionCode MacroAction::getActionCode() const
 {
-    return this->ActionCode;
+    return ActionCode;
 }
 
 /// <summary>
@@ -96,9 +82,10 @@ MacroActionCode MacroAction::getActionCode() const
 /// <returns>Char payload if action is Char. Blank otherwise.</returns>
 char MacroAction::getChar() const
 {
-    if (this->ActionCode == MacroActionCode::Char)
+    if (ActionCode == MacroActionCode::Char &&
+        std::holds_alternative<char>(payload))
     {
-        return this->_charPayload;
+        return std::get<char>(payload);
     }
     return {};
 }
@@ -109,9 +96,10 @@ char MacroAction::getChar() const
 /// <returns>String payload if action is a string. Blank otherwise.</returns>
 std::string MacroAction::getString() const
 {
-    if (this->ActionCode == MacroActionCode::String)
+    if (ActionCode == MacroActionCode::String &&
+        std::holds_alternative<std::string>(payload))
     {
-        return this->_strPayload;
+        return std::get<std::string>(payload);
     }
     return {};
 }
@@ -122,9 +110,10 @@ std::string MacroAction::getString() const
 /// <returns>Virtual Key payload if action is VirtualKey. Blank (0) otherwise.</returns>
 short MacroAction::getVK() const
 {
-    if (this->ActionCode == MacroActionCode::VirtualKey)
+    if (ActionCode == MacroActionCode::VirtualKey &&
+        std::holds_alternative<short>(payload))
     {
-        return this->_vkPayload;
+        return std::get<short>(payload);
     }
     return {};
 }
@@ -135,5 +124,18 @@ short MacroAction::getVK() const
 /// <returns>std::string description for this action</returns>
 std::string MacroAction::getDescription() const
 {
-    return this->description;
+    return description;
+}
+
+std::ostream& operator<<(std::ostream& strm, const MacroAction& ma)
+{
+    switch (ma.ActionCode)
+    {
+        case MacroActionCode::String:
+            strm << "String action: " << ma.getString(); break;
+        case MacroActionCode::Char: strm << "Char action: " << ma.getChar(); break;
+        case MacroActionCode::VirtualKey: strm << "Virtual Key: " << Utils::virtualKeyStrings[ma.getVK()]; break;
+        case MacroActionCode::Invalid: strm << "Invalid action"; break;
+    }
+    return strm;
 }

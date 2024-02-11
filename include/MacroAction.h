@@ -20,6 +20,8 @@
 
 #pragma once
 #include <string>
+#include <iostream>
+#include <variant>
 
  /// <summary>
  /// Action to be performed by MacroAction
@@ -39,14 +41,11 @@ enum class MacroActionCode : int
 class MacroAction
 {
     MacroActionCode ActionCode;
-    char            _charPayload;
-    std::string     _strPayload;
-    short           _vkPayload;
+    std::variant<char, short, std::string> payload;
     std::string     description;
-    void SetPayload(char, short, const std::string&);
 
 public:
-    MacroAction();
+    MacroAction(const std::string& desc = "");
     MacroAction(const char newPayload, const std::string& desc);
     MacroAction(const std::string& newPayload, const std::string& desc);
     MacroAction(const short newPayload, const std::string& desc);
@@ -55,5 +54,6 @@ public:
     std::string getString() const;
     short getVK() const;
     std::string getDescription() const;
+    friend std::ostream& operator<<(std::ostream& strm, const MacroAction& ma);
 };
 

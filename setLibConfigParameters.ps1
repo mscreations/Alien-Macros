@@ -33,7 +33,7 @@ if ($modified)
     Set-Content -Path $vcxprojfile -Value $file
 }
 else {
-    Write-Host "Nothing done"
+    Write-Output "Nothing done"
 }
 
 $file = (Get-Content -Path $hppfile -Raw)
