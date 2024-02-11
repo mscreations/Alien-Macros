@@ -24,7 +24,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <format>
 #include <functional>
 #include <Windows.h>
 #include <hidsdi.h>
@@ -34,9 +33,11 @@
 #pragma comment(lib, "hid.lib")
 #pragma comment(lib, "setupapi.lib")
 
- /// <summary>
- /// Structure to hold data from HID device
- /// </summary>
+constexpr auto READ_THREAD_TIMEOUT = 1000;
+
+/// <summary>
+/// Structure to hold data from HID device
+/// </summary>
 typedef struct _HID_DATA
 {
     bool                                IsButtonData;
@@ -121,12 +122,16 @@ class HidDevice
                              HidDataPtr& Data,
                              unsigned long DataLength,
                              std::unique_ptr<PHIDP_PREPARSED_DATA>& Ppd);
+
+    bool ReadOverlapped(std::unique_ptr<OVERLAPPED>& overlap);
+    bool ReadAsyncThreadProc(unsigned int maxCharToRead, std::atomic<bool>& termThread);
 public:
     explicit HidDevice(const std::string& DevicePath);
     ~HidDevice();
     bool IsOpen() const;
     void Close();
     bool Read();
+    bool ReadAsync(unsigned int maxCharToRead = UINT_MAX);
     bool Open(bool HasReadAccess = false, bool HasWriteAccess = false, bool IsOverlapped = false, bool IsExclusive = false);
     bool FillDevice();
     TargetDevice getTargetInfo() const;

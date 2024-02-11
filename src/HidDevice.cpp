@@ -20,6 +20,10 @@
 
 #include "HidDevice.h"
 #include <stdexcept>
+#include <format>
+#include <thread>
+#include <atomic>
+#include <csignal>
 
  /// <summary>
  /// Unpacks HID report into the specified buffer
@@ -188,6 +192,106 @@ void HidDevice::SetHidData(HidDataPtr& ptr, const unsigned long offset, const US
 }
 
 /// <summary>
+/// Attempts to start a read
+/// </summary>
+/// <param name="overlap">unique_ptr to overlap structure</param>
+/// <returns>true if read successful / false otherwise</returns>
+bool HidDevice::ReadOverlapped(std::unique_ptr<OVERLAPPED>& overlap)
+{
+    bool readStatus{ false };
+    unsigned long bytesRead{ 0 };
+
+    readStatus = ReadFile(device,
+                          InputReportBuffer.get(),
+                          Caps->InputReportByteLength,
+                          &bytesRead,
+                          overlap.get());
+
+    if (!readStatus)
+    {
+        return (GetLastError() == ERROR_IO_PENDING);
+    }
+    else
+    {
+        SetEvent(overlap->hEvent);
+        return true;
+    }
+}
+
+/// <summary>
+/// Thread procedure for asynchronous read. Verifies device opened with appropriate
+/// permissions. Continues to read until either:
+/// a. terminateThread is set to true in the controller thread
+/// b. maxCharToRead is not UINT_MAX AND we have not read this many characters
+/// </summary>
+/// <param name="maxCharToRead">Maximum number of characters to read</param>
+/// <param name="terminateThread">Flag for thread termination. Set to true by controlling
+/// thread when thread should exit.</param>
+/// <returns>true if read successful / false otherwise</returns>
+bool HidDevice::ReadAsyncThreadProc(unsigned int maxCharToRead, std::atomic<bool>& terminateThread)
+{
+    // Verify device is open for read and overlapped.
+    if (!IsOpen() && OpenedForRead && OpenedOverlapped)
+    {
+        // If not, reopen with correct permissions
+        Open(true, false, true);
+        if (!IsOpen() && OpenedForRead && OpenedOverlapped)
+        {
+            // Still not open, throw an exception
+            throw std::runtime_error("HidDevice cannot be opened for async read.");
+        }
+    }
+
+    // Create completion event for read
+    HANDLE completionEvent = CreateEventA(nullptr, false, false, nullptr);
+    if (completionEvent == nullptr) { return false; }
+
+    bool readResult{ false };
+    unsigned long numReadsDone{ 0 };
+    unsigned long waitStatus{ 0 };
+    unsigned long bytesTransferred{ 0 };
+
+    do
+    {
+        // Create a unique_ptr to an OVERLAPPED structure
+        std::unique_ptr<OVERLAPPED> overlap =
+            std::make_unique<OVERLAPPED>(OVERLAPPED{ .hEvent = completionEvent });
+
+        readResult = ReadOverlapped(overlap);
+
+        if (!readResult) { break; }
+
+        while (!terminateThread.load())
+        {
+            waitStatus = WaitForSingleObject(completionEvent, READ_THREAD_TIMEOUT);
+
+            if (waitStatus == WAIT_OBJECT_0)
+            {
+                readResult = GetOverlappedResult(device, overlap.get(), &bytesTransferred, true);
+                break;
+            }
+        }
+
+        if (!terminateThread.load())
+        {
+            numReadsDone++;
+
+            UnpackReport(InputReportBuffer,
+                         Caps->InputReportByteLength,
+                         HidP_Input,
+                         InputData,
+                         InputDataLength,
+                         Ppd);
+        }
+
+    } while (readResult &&
+             !terminateThread.load() &&
+             (maxCharToRead == UINT_MAX || numReadsDone < maxCharToRead));
+
+    return true;
+}
+
+/// <summary>
 /// Creates a new HidDevice from the DevicePath
 /// </summary>
 /// <param name="DevicePath">The Device Path</param>
@@ -266,6 +370,52 @@ bool HidDevice::Read()
                         Ppd);
 }
 
+// This is necessary to facilitate using a lambda function with capture for
+// the signal handler. 
+namespace
+{
+    std::function<void(int)> terminateHandler;
+    void signalHandler(int signal)
+    {
+        if (terminateHandler)
+        {
+            terminateHandler(signal);
+        }
+    }
+}
+
+/// <summary>
+/// Asynchronous read of HidDevice object. Spawns a new thread for the asynchronous read
+/// operation and enables Control-C interrupt of read.
+/// </summary>
+/// <param name="maxCharToRead">Number of characters to read from device</param>
+/// <returns>true if read successful / false otherwise</returns>
+bool HidDevice::ReadAsync(unsigned int maxCharToRead)
+{
+    std::atomic<bool> success(false);
+    std::atomic<bool> terminateThread(false);
+
+    // Set the SIGINT handler to set the terminateThread atomic to true
+    terminateHandler = [&terminateThread](int signal)
+        {
+            terminateThread.store(true);
+        };
+    std::signal(SIGINT, signalHandler);
+
+    Open(true, false, true, false);     // Open for read and overlapped use
+
+    std::jthread readThread([&success, this, maxCharToRead, &terminateThread]()
+ {
+     // Spawn thread and store result in success atomic variable.
+     success.store(ReadAsyncThreadProc(maxCharToRead, terminateThread));
+});
+
+    // Wait for thread to exit. Control-C will set terminateThread to true which will
+    // force the thread to exit without finishing the read.
+    readThread.join();
+    std::signal(SIGINT, SIG_DFL);   // Reset the SIGINT handler
+    return success.load();
+}
 
 /// <summary>
 /// Attempts to open the HidDevice with the chosen permissions.
@@ -274,7 +424,7 @@ bool HidDevice::Read()
 /// </summary>
 /// <param name="HasReadAccess">Open with read access</param>
 /// <param name="HasWriteAccess">Open with write access (NOT IMPLEMENTED)</param>
-/// <param name="IsOverlapped">Open for asynchronous operation (NOT IMPLEMENTED)</param>
+/// <param name="IsOverlapped">Open for asynchronous operation</param>
 /// <param name="IsExclusive">Carryover from hclient sample. Not sure what this does. (NOT IMPLEMENTED)</param>
 /// <returns>true if HidDevice opened without issue / false otherwise</returns>
 bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped, bool IsExclusive)
@@ -312,6 +462,20 @@ bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped,
     {
         return false;
     }
+    if (IsOverlapped)
+    {
+        CloseHandle(device);
+        device = INVALID_HANDLE_VALUE;
+        device = CreateFileA(DevicePath.c_str(),
+                            accessFlags,
+                            sharingFlags,
+                            nullptr,
+                            OPEN_EXISTING,
+                            FILE_FLAG_OVERLAPPED,
+                            nullptr);
+        if (device == INVALID_HANDLE_VALUE) { return false; }
+    }
+
     return true;
 }
 
