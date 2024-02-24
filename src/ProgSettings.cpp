@@ -22,12 +22,14 @@
 #include <format>
 #include <iomanip>
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <regex>
 #include <limits>
 #include "colors.h"
 #include "HidDevice.h"
 #include "setup.h"
+#include "RegistryHelper.h"
 
 ProgSettings::ProgSettings() : target{ 0,0,0,0 }, configFilename{} {}
 
@@ -107,6 +109,45 @@ ProgSettings::ProgSettings(ProgSettings& ps)
     {
         macrolist = ps.macrolist;
     }
+}
+
+bool ProgSettings::Save()
+{
+    std::unordered_map<std::string, unsigned short> targetData = { {"targetVID", target.targetVID},
+                       {"targetPID", target.targetPID},
+                       {"usagePage", target.usagePage},
+                       {"usageCode", target.usageCode} };
+    for (auto& [key, value] : targetData)
+    {
+        RegistryHelper::WriteDwordValue(key, value, "TargetData");
+    }
+
+    if (device->getDevicePath().length() > 0)
+    {
+        RegistryHelper::WriteStringValue("DevicePath", device->getDevicePath());
+    }
+
+    for (auto& [key, ma] : macrolist)
+    {
+        std::stringstream path;
+        path << "Macros\\" << std::format("{:04x}", key);
+        RegistryHelper::WriteDwordValue("actionCode", static_cast<unsigned long>(ma.getActionCode()), path.str());
+        RegistryHelper::WriteStringValue("description", ma.getDescription(), path.str());
+        switch (ma.getActionCode())
+        {
+            case MacroActionCode::String:
+                RegistryHelper::WriteStringValue("payload", ma.getString(), path.str());
+                break;
+            case MacroActionCode::VirtualKey: [[fallthrough]];
+            case MacroActionCode::Char:
+                RegistryHelper::WriteDwordValue("payload", ma.getIntPayload(), path.str());
+                break;
+            default:
+                RegistryHelper::WriteDwordValue("payload", 0, path.str());
+                break;
+        }
+    }
+    return false;
 }
 
 std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)

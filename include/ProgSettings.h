@@ -58,6 +58,8 @@ public:
     ProgSettings(int argc, const char* argv[]);
     ProgSettings(ProgSettings& ps);
 
+    bool Save();
+
     unsigned short getVID() const;
     unsigned short getPID() const;
     unsigned short getUsagePage() const;

@@ -30,6 +30,7 @@ int main(int argc, const char* argv[])
     std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
 
     ProgSettings ps{ argc, argv };
+    ps.Save();
     MacroHandler mh(ps.getMacros());
 
 
