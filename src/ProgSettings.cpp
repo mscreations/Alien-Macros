@@ -83,6 +83,20 @@ ProgSettings::ProgSettings(int argc, const char* argv[])
         std::cerr << "Configuration file could not be loaded" << std::endl;
         throw std::invalid_argument("Configuration file could not be loaded");
     }
+
+    {
+        HidDevices devices{};
+        devices.FindAllHidDevices(true);
+        std::vector<HidDevicePtr>& list = devices.getDevices();
+        for (auto& dev : list)
+        {
+            if (dev->IsTarget(target.targetVID, target.targetPID, target.usagePage, target.usageCode))
+            {
+                device = std::move(dev);
+                break;
+            }
+        }
+    }
 }
 
 ProgSettings::ProgSettings(ProgSettings& ps)
