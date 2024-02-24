@@ -137,6 +137,7 @@ public:
     TargetDevice getTargetInfo() const;
     bool IsTarget(int vid, int pid, int usagepage, int usagecode);
     USAGE getKeyPress() const;
+    std::string getDevicePath() const;
 
     friend std::ostream& operator<<(std::ostream& strm, const HidDevice& hd);
     friend class setup;

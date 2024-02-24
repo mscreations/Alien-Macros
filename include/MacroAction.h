@@ -50,6 +50,7 @@ public:
     MacroAction(const std::string& newPayload, const std::string& desc);
     MacroAction(const short newPayload, const std::string& desc);
     MacroActionCode getActionCode() const;
+    int getIntPayload() const;
     char getChar() const;
     std::string getString() const;
     short getVK() const;

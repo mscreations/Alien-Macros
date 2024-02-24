@@ -36,15 +36,25 @@ std::vector<std::string> RegistryHelper::GenericEnumerate(const std::string& sub
     return subItems;
 }
 
+std::string RegistryHelper::GetFullPath(const std::string& subKey)
+{
+    std::string fullPath = appSubKey;
+    if (subKey.length() > 0)
+    {
+        fullPath += "\\" + subKey;
+    }
+    return fullPath;
+}
+
 /// <summary>
 /// Writes std::string value to specified valueName
 /// </summary>
 /// <param name="valueName">Value name to save</param>
 /// <param name="valueData">Data to save to valueName</param>
 /// <returns>true if successful / false otherwise</returns>
-bool RegistryHelper::WriteStringValue(const std::string& valueName, const std::string& valueData)
+bool RegistryHelper::WriteStringValue(const std::string& valueName, const std::string& valueData, const std::string& subKey)
 {
-    return RegSetKeyValueA(HKEY_CURRENT_USER, appSubKey.c_str(), valueName.c_str(), REG_SZ, valueData.c_str(), static_cast<unsigned long>((valueData.length() + 1) * sizeof(char))) == ERROR_SUCCESS;
+    return RegSetKeyValueA(HKEY_CURRENT_USER, GetFullPath(subKey).c_str(), valueName.c_str(), REG_SZ, valueData.c_str(), static_cast<unsigned long>((valueData.length() + 1) * sizeof(char))) == ERROR_SUCCESS;
 }
 
 /// <summary>
@@ -53,16 +63,16 @@ bool RegistryHelper::WriteStringValue(const std::string& valueName, const std::s
 /// <param name="valueName">Value to retrieve</param>
 /// <param name="valueData">std::string reference that will contain the value in the registry</param>
 /// <returns>true on success / false otherwise</returns>
-bool RegistryHelper::ReadStringValue(const std::string& valueName, std::string& valueData)
+bool RegistryHelper::ReadStringValue(const std::string& valueName, std::string& valueData, const std::string& subKey)
 {
     unsigned long bufferSize{ 0 };
 
-    long result = RegGetValueA(HKEY_CURRENT_USER, appSubKey.c_str(), valueName.c_str(), RRF_RT_REG_SZ, nullptr, nullptr, &bufferSize);
+    long result = RegGetValueA(HKEY_CURRENT_USER, GetFullPath(subKey).c_str(), valueName.c_str(), RRF_RT_REG_SZ, nullptr, nullptr, &bufferSize);
 
     if (result == ERROR_SUCCESS)
     {
         valueData.assign(bufferSize, 0);
-        result = RegGetValueA(HKEY_CURRENT_USER, appSubKey.c_str(), valueName.c_str(), RRF_RT_REG_SZ, nullptr, valueData.data(), &bufferSize);
+        result = RegGetValueA(HKEY_CURRENT_USER, GetFullPath(subKey).c_str(), valueName.c_str(), RRF_RT_REG_SZ, nullptr, valueData.data(), &bufferSize);
 
         if (result != ERROR_SUCCESS) { valueData.clear(); }
         return result == ERROR_SUCCESS;
@@ -76,9 +86,9 @@ bool RegistryHelper::ReadStringValue(const std::string& valueName, std::string& 
 /// <param name="valueName">ValueName to save to</param>
 /// <param name="valueData">Data to be saved</param>
 /// <returns>true on success / false otherwise</returns>
-bool RegistryHelper::WriteDwordValue(const std::string& valueName, const unsigned long& valueData)
+bool RegistryHelper::WriteDwordValue(const std::string& valueName, const unsigned long& valueData, const std::string& subKey)
 {
-    return RegSetKeyValueA(HKEY_CURRENT_USER, appSubKey.c_str(), valueName.c_str(), REG_DWORD, &valueData, sizeof(unsigned long)) == ERROR_SUCCESS;
+    return RegSetKeyValueA(HKEY_CURRENT_USER, GetFullPath(subKey).c_str(), valueName.c_str(), REG_DWORD, &valueData, sizeof(unsigned long)) == ERROR_SUCCESS;
 }
 
 /// <summary>
@@ -87,10 +97,10 @@ bool RegistryHelper::WriteDwordValue(const std::string& valueName, const unsigne
 /// <param name="valueName">Value to read</param>
 /// <param name="valueData">Referenced var to receive data</param>
 /// <returns>true on success / false otherwise</returns>
-bool RegistryHelper::ReadDwordValue(const std::string& valueName, unsigned long& valueData)
+bool RegistryHelper::ReadDwordValue(const std::string& valueName, unsigned long& valueData, const std::string& subKey)
 {
     unsigned long dataType, dataSize = sizeof(unsigned long);
-    long result = RegGetValueA(HKEY_CURRENT_USER, appSubKey.c_str(), valueName.c_str(), RRF_RT_REG_DWORD, &dataType, &valueData, &dataSize);
+    long result = RegGetValueA(HKEY_CURRENT_USER, GetFullPath(subKey).c_str(), valueName.c_str(), RRF_RT_REG_DWORD, &dataType, &valueData, &dataSize);
     return result == ERROR_SUCCESS && dataType == REG_DWORD;
 }
 

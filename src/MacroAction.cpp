@@ -76,6 +76,19 @@ MacroActionCode MacroAction::getActionCode() const
     return ActionCode;
 }
 
+int MacroAction::getIntPayload() const
+{
+    if (std::holds_alternative<char>(payload))
+    {
+        return std::get<char>(payload);
+    }
+    else if (std::holds_alternative<short>(payload))
+    {
+        return std::get<short>(payload);
+    }
+    return 0;
+}
+
 /// <summary>
 /// If this is a char action, returns the char variable
 /// </summary>

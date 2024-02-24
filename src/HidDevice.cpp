@@ -152,6 +152,11 @@ USAGE HidDevice::getKeyPress() const
     return (InputData.get())->ButtonData.Usages.front();
 }
 
+std::string HidDevice::getDevicePath() const
+{
+    return DevicePath;
+}
+
 /// <summary>
 /// Load's a string using the specified function. This is intended for the HidD_GetManufacturerString
 /// and HidD_GetProductString. Automatically loads the data into a wide string and then converts it
@@ -422,10 +427,10 @@ bool HidDevice::ReadAsync(unsigned int maxCharToRead)
     Open(true, false, true, false);     // Open for read and overlapped use
 
     std::jthread readThread([&success, this, maxCharToRead, &terminateThread]()
- {
-     // Spawn thread and store result in success atomic variable.
-     success.store(ReadAsyncThreadProc(maxCharToRead, terminateThread));
-});
+                            {
+                                // Spawn thread and store result in success atomic variable.
+                                success.store(ReadAsyncThreadProc(maxCharToRead, terminateThread));
+                            });
 
     // Wait for thread to exit. Control-C will set terminateThread to true which will
     // force the thread to exit without finishing the read.
@@ -484,12 +489,12 @@ bool HidDevice::Open(bool HasReadAccess, bool HasWriteAccess, bool IsOverlapped,
         CloseHandle(device);
         device = INVALID_HANDLE_VALUE;
         device = CreateFileA(DevicePath.c_str(),
-                            accessFlags,
-                            sharingFlags,
-                            nullptr,
-                            OPEN_EXISTING,
-                            FILE_FLAG_OVERLAPPED,
-                            nullptr);
+                             accessFlags,
+                             sharingFlags,
+                             nullptr,
+                             OPEN_EXISTING,
+                             FILE_FLAG_OVERLAPPED,
+                             nullptr);
         if (device == INVALID_HANDLE_VALUE) { return false; }
     }
 
