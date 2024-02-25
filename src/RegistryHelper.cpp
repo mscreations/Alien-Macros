@@ -12,7 +12,7 @@ std::vector<std::string> RegistryHelper::GenericEnumerate(const std::string& sub
     std::vector<std::string> subItems{};
 
     HKEY hSubKey;
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, subKey.c_str(), 0, KEY_READ, &hSubKey) == ERROR_SUCCESS)
+    if (RegOpenKeyExA(HKEY_CURRENT_USER, GetFullPath(subKey).c_str(), 0, KEY_READ, &hSubKey) == ERROR_SUCCESS)
     {
         unsigned long idx{ 0 };
         std::string subKeyName(MAX_PATH, 0);
@@ -26,7 +26,8 @@ std::vector<std::string> RegistryHelper::GenericEnumerate(const std::string& sub
                            RegEnumValueA(hSubKey, idx, subKeyName.data(), &subkeySize, nullptr, nullptr, nullptr, nullptr) :
                            RegEnumKeyExA(hSubKey, idx, subKeyName.data(), &subkeySize, nullptr, nullptr, nullptr, nullptr));
             if (result == ERROR_NO_MORE_ITEMS) { break; }
-            subItems.push_back(subKeyName);
+            subKeyName.resize(subkeySize);  // resize string to size returned by function
+            subItems.push_back(subKeyName); // move string to vector
             idx++;
             subkeySize = MAX_PATH;
         } while (result == ERROR_SUCCESS);
@@ -36,6 +37,11 @@ std::vector<std::string> RegistryHelper::GenericEnumerate(const std::string& sub
     return subItems;
 }
 
+/// <summary>
+/// Adds subKey to the appSubKey if it exists
+/// </summary>
+/// <param name="subKey">subKey to be added to appSubKey</param>
+/// <returns>The full path</returns>
 std::string RegistryHelper::GetFullPath(const std::string& subKey)
 {
     std::string fullPath = appSubKey;
@@ -74,6 +80,8 @@ bool RegistryHelper::ReadStringValue(const std::string& valueName, std::string& 
         valueData.assign(bufferSize, 0);
         result = RegGetValueA(HKEY_CURRENT_USER, GetFullPath(subKey).c_str(), valueName.c_str(), RRF_RT_REG_SZ, nullptr, valueData.data(), &bufferSize);
 
+        valueData.resize(bufferSize - 1);
+
         if (result != ERROR_SUCCESS) { valueData.clear(); }
         return result == ERROR_SUCCESS;
     }
@@ -102,6 +110,19 @@ bool RegistryHelper::ReadDwordValue(const std::string& valueName, unsigned long&
     unsigned long dataType, dataSize = sizeof(unsigned long);
     long result = RegGetValueA(HKEY_CURRENT_USER, GetFullPath(subKey).c_str(), valueName.c_str(), RRF_RT_REG_DWORD, &dataType, &valueData, &dataSize);
     return result == ERROR_SUCCESS && dataType == REG_DWORD;
+}
+
+bool RegistryHelper::CheckIfKeyExists(const std::string& keyName, const std::string& subKey)
+{
+    HKEY hKey;
+    std::string key = GetFullPath(subKey) + "\\" + keyName;
+    long result = RegOpenKeyExA(HKEY_CURRENT_USER, key.c_str(), 0, KEY_READ, &hKey);
+    if (result == ERROR_SUCCESS)
+    {
+        RegCloseKey(hKey);
+        return true;
+    }
+    return false;
 }
 
 /// <summary>

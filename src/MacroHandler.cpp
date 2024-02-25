@@ -71,6 +71,7 @@ bool MacroHandler::Send(const std::string& outputString) const
 
     for (const char& c : outputString)
     {
+        if (c == '\0') { break; }
         std::vector<INPUT> charInputs = GetKeystrokes(c);
         inputs.insert(inputs.end(), charInputs.begin(), charInputs.end());
     }
