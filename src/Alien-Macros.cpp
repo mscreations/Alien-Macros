@@ -23,45 +23,23 @@
 #include "ProgSettings.h"
 #include "HidDevice.h"
 #include "MacroHandler.h"
-#include "setup.h"
 
-int main(int argc, const char* argv[])
+int main()
 {
     std::cout << "Alien Macros - Version " << GetAppVersion() << std::endl;
 
-    ProgSettings ps{ argc, argv };
-    ps.Save();
+    ProgSettings ps{};
     MacroHandler mh(ps.getMacros());
 
+    HidDevicePtr device = ps.getDevice();
 
-    //#ifdef _DEBUG
-    //    std::cout << ps << std::endl;
-    //#endif
-
-    HidDevices devices{};
-    devices.FindAllHidDevices(true);
-
-    const std::vector<HidDevicePtr>& list = devices.getDevices();
-
-    for (const auto& dev : list)
+    device->Open(true);
+    while (true)
     {
-        if (dev->IsTarget(ps.getVID(), ps.getPID(), ps.getUsagePage(), ps.getUsageCode()))
-        {
-            std::cout << "Found target device: \n" << *(dev.get()) << std::endl;
-
-            dev.get()->Open(true);      // Open with Read Access. All other parameters default false.
-            while (true)
-            {
-                dev.get()->Read();
-
-                unsigned short key = dev.get()->getKeyPress();
-
-                if (key == 0x00) { continue; }
-
-                std::cout << "Read: 0x" << std::hex << key << " " << ps.getDescription(key) << std::endl;
-
-                mh.Process(key);
-            }
-        }
+        device.get()->Read();
+        unsigned short key = device.get()->getKeyPress();
+        if (key == 0x00) { continue; }
+        std::cout << "Read: 0x" << std::hex << key << " " << ps.getDescription(key) << std::endl;
+        mh.Process(key);
     }
 }

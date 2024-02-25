@@ -41,7 +41,7 @@ void Setup::OutputDeviceList(const HidDevices& devices)
     for (int i = 1; const auto & dev : devices.getDevices())
     {
         bool known = false;
-        if (ProgSettings::knownDevices.find(dev->getTargetInfo()) != ProgSettings::knownDevices.end())
+        if (dev->IsKnownTarget())
         {
             known = true;
         }

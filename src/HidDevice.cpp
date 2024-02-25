@@ -126,19 +126,17 @@ TargetDevice HidDevice::getTargetInfo() const
 }
 
 /// <summary>
-/// Checks if HidDevice is the target device. Likely going to be deprecated.
+/// Checks if HidDevice is the entered target device
 /// </summary>
-/// <param name="vid">Vendor ID</param>
-/// <param name="pid">Product ID</param>
-/// <param name="usagepage">Usage Page</param>
-/// <param name="usagecode">Usage Code</param>
-/// <returns>True if current device matches entered device details / false otherwise</returns>
-bool HidDevice::IsTarget(int vid, int pid, int usagepage, int usagecode)
+/// <returns>true if current device matches entered device details / false otherwise</returns>
+bool HidDevice::IsKnownTarget() const
 {
-    return Attributes->VendorID == vid &&
-        Attributes->ProductID == pid &&
-        Caps->UsagePage == usagepage &&
-        Caps->Usage == usagecode;
+    return knownDevices.find(getTargetInfo()) != knownDevices.end();
+}
+
+bool HidDevice::IsKnownTarget(TargetDevice dev) const
+{
+    return dev == getTargetInfo();
 }
 
 /// <summary>
@@ -152,6 +150,10 @@ USAGE HidDevice::getKeyPress() const
     return (InputData.get())->ButtonData.Usages.front();
 }
 
+/// <summary>
+/// Retrieves DevicePath
+/// </summary>
+/// <returns>DevicePath for this instance</returns>
 std::string HidDevice::getDevicePath() const
 {
     return DevicePath;
@@ -324,6 +326,10 @@ HidDevice::HidDevice(const std::string& DevicePath)
     this->Ppd = std::make_unique<PHIDP_PREPARSED_DATA>();
     this->Attributes = std::make_unique<HIDD_ATTRIBUTES>();
     this->Caps = std::make_unique<HIDP_CAPS>();
+
+    // Populate the rest of the data by opening and then closing the device
+    Open();
+    Close();
 }
 
 /// <summary>
@@ -352,7 +358,6 @@ bool HidDevice::IsOpen() const
 {
     return device != INVALID_HANDLE_VALUE;
 }
-
 
 /// <summary>
 /// Synchronous read of HidDevice object. Checks if open and if is not open,

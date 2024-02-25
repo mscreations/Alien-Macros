@@ -25,6 +25,7 @@
 #include <iostream>
 #include <vector>
 #include <functional>
+#include <unordered_set>
 #include <Windows.h>
 #include <hidsdi.h>
 #include <SetupAPI.h>
@@ -135,12 +136,18 @@ public:
     bool Open(bool HasReadAccess = false, bool HasWriteAccess = false, bool IsOverlapped = false, bool IsExclusive = false);
     bool FillDevice();
     TargetDevice getTargetInfo() const;
-    bool IsTarget(int vid, int pid, int usagepage, int usagecode);
+    bool IsKnownTarget() const;
+    bool IsKnownTarget(TargetDevice dev) const;
     USAGE getKeyPress() const;
     std::string getDevicePath() const;
 
     friend std::ostream& operator<<(std::ostream& strm, const HidDevice& hd);
     friend class setup;
+
+    // These are the known valid targets. 
+    inline static const std::unordered_set<TargetDevice, TargetDevice::HashFunction> knownDevices = {
+        { 0x0d62, 0x1a1c, 0x0c, 0x01 }      // Alienware m17 R4 w/ Per-key lighting
+    };
 };
 
 using HidDevicePtr = std::unique_ptr<HidDevice>;

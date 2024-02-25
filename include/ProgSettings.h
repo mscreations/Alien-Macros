@@ -25,7 +25,6 @@
 #include "Utils.h"
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include "TargetDevice.h"
 #include "HidDevice.h"
 
@@ -52,13 +51,16 @@ class ProgSettings
     std::unordered_map<short, MacroAction> macrolist;
     std::string configFilename;
 
-    bool Load(const std::string& filename);
+    [[nodiscard]] bool Load(const std::string& filename);
 public:
+    [[nodiscard]] bool Load();
     ProgSettings();
     ProgSettings(int argc, const char* argv[]);
     ProgSettings(ProgSettings& ps);
 
-    bool Save();
+    [[nodiscard]] bool Save() const;
+
+    HidDevicePtr getDevice();
 
     unsigned short getVID() const;
     unsigned short getPID() const;
@@ -69,10 +71,5 @@ public:
 
     friend std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps);
     friend class Setup;     // Setup needs access to private members
-
-    // These are the known valid targets. 
-    inline static const std::unordered_set<TargetDevice, TargetDevice::HashFunction> knownDevices = {
-        { 0x0d62, 0x1a1c, 0x0c, 0x01 }      // Alienware m17 R4 w/ Per-key lighting
-    };
 };
 
