@@ -181,11 +181,6 @@
     <ClInclude Include="include\MacroAction.h" />
     <ClInclude Include="include\MacroHandler.h" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="libconfig\lib\libconfig++.vcxproj">
-      <Project>{a0c36ce7-d908-4573-8b69-249eeeb7d2be}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

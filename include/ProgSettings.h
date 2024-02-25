@@ -20,29 +20,12 @@
 
 #pragma once
 
-#include "libconfig.h++"
 #include "MacroAction.h"
 #include "Utils.h"
 #include <string>
 #include <unordered_map>
 #include "TargetDevice.h"
 #include "HidDevice.h"
-
-constexpr auto DEFAULT_CFG_FILENAME = "awmacros.cfg";
-
-// configuration file section labels
-constexpr auto TARGET_DEVICE = "targetdevice";
-constexpr auto VID = "vid";
-constexpr auto PID = "pid";
-constexpr auto USAGEPAGE = "usagepage";
-constexpr auto USAGECODE = "usagecode";
-constexpr auto MACRO_COUNT = "macrocount";
-constexpr auto MACROS = "macros";
-constexpr auto SCANCODE = "scancode";
-constexpr auto PAYLOAD_TYPE = "payloadtype";
-constexpr auto MACRO_ACTION = "macroaction";
-constexpr auto MACRO_PAYLOAD = "macropayload";
-constexpr auto MACRO_KEY_DESCRIPTION = "macrodescription";
 
 class ProgSettings
 {
@@ -51,14 +34,12 @@ class ProgSettings
     std::unordered_map<short, MacroAction> macrolist;
     std::string configFilename;
 
-    [[nodiscard]] bool Load(const std::string& filename);
-public:
     [[nodiscard]] bool Load();
-    ProgSettings();
-    ProgSettings(int argc, const char* argv[]);
-    ProgSettings(ProgSettings& ps);
-
     [[nodiscard]] bool Save() const;
+
+public:
+    ProgSettings();
+    ProgSettings(ProgSettings& ps);
 
     HidDevicePtr getDevice();
 
