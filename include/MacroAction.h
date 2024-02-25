@@ -45,10 +45,10 @@ class MacroAction
     std::string     description;
 
 public:
-    MacroAction(const std::string& desc = "");
-    MacroAction(const char newPayload, const std::string& desc);
-    MacroAction(const std::string& newPayload, const std::string& desc);
-    MacroAction(const short newPayload, const std::string& desc);
+    explicit MacroAction(const std::string& desc = "");
+    explicit MacroAction(const char newPayload, const std::string& desc);
+    explicit MacroAction(const std::string& newPayload, const std::string& desc);
+    explicit MacroAction(const short newPayload, const std::string& desc);
     MacroActionCode getActionCode() const;
     int getIntPayload() const;
     char getChar() const;

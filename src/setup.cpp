@@ -89,7 +89,6 @@ bool Setup::VerifyTarget(HidDevicePtr& target)
 
 std::unique_ptr<ProgSettings> Setup::invokeSetup()
 {
-    // TODO: insert return statement here
     // ****1. Search all HID devices
     // ****     a. Locate all devices
     // ****     b. If a known device, recommend it

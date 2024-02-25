@@ -22,6 +22,7 @@
 #include <iostream>
 #include <format>
 #include <sstream>
+#include <algorithm>
 #include "colors.h"
 
 void Utils::ResetCin()
@@ -40,13 +41,8 @@ bool Utils::ConvertToNumeric(const std::string& userInput, unsigned int& respons
 
     if (userInput.empty()) { return false; }
 
-    for (char c : userInput)
-    {
-        if (!std::isdigit(c))
-        {
-            return false;
-        }
-    }
+    // Ensure all characters in string are numeric values
+    if (!std::all_of(userInput.begin(), userInput.end(), [](char c) { return std::isdigit(c); })) { return false; }
 
     try
     {
@@ -85,7 +81,7 @@ bool Utils::AskResponse(const std::string& message, unsigned int& response, cons
 
     } while (!ConvertToNumeric(userInput, response));
 
-    if (response <= 0 || response > maxValue)
+    if (response == 0 || response > maxValue)
     {
         response = UINT_MAX;
         std::cout << Colors::CursorPreviousLine;

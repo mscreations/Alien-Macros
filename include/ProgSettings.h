@@ -38,8 +38,8 @@ class ProgSettings
     [[nodiscard]] bool Save() const;
 
 public:
-    ProgSettings(bool skipAll = false);
-    ProgSettings(ProgSettings& ps);
+    explicit ProgSettings(bool skipAll = false);
+    explicit ProgSettings(ProgSettings& ps);
 
     HidDevicePtr getDevice();
     std::string getDescription(const short scancode) const;

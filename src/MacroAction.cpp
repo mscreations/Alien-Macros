@@ -24,48 +24,28 @@
  /// <summary>
  /// Creates an indeterminate action with no payload and an Invalid action code
  /// </summary>
-MacroAction::MacroAction(const std::string& desc)
-{
-    payload = "";
-    description = desc;
-    ActionCode = MacroActionCode::Invalid;
-}
+MacroAction::MacroAction(const std::string& desc) : payload{}, description{ desc }, ActionCode{ MacroActionCode::Invalid } {}
 
 /// <summary>
 /// Create a char action and loads the payload to the proper variable.
 /// </summary>
 /// <param name="newPayload">Value to be loaded into payload</param>
 /// <param name="desc">Description for this action</param>
-MacroAction::MacroAction(const char newPayload, const std::string& desc)
-{
-    description = desc;
-    ActionCode = MacroActionCode::Char;
-    payload = newPayload;
-}
+MacroAction::MacroAction(const char newPayload, const std::string& desc) : payload{ newPayload }, description{ desc }, ActionCode{ MacroActionCode::Char } {}
 
 /// <summary>
 /// Create a std::string action and loads the payload to the proper variable.
 /// </summary>
 /// <param name="newPayload">std::string value to be loaded</param>
 /// <param name="desc">Description for this action</param>
-MacroAction::MacroAction(const std::string& newPayload, const std::string& desc)
-{
-    description = desc;
-    ActionCode = MacroActionCode::String;
-    payload = newPayload;
-}
+MacroAction::MacroAction(const std::string& newPayload, const std::string& desc) : payload{ newPayload }, description{ desc }, ActionCode{ MacroActionCode::String } {}
 
 /// <summary>
 /// Creates a Virtual key action 
 /// </summary>
 /// <param name="newPayload">Value to be loaded to the proper variable</param>
 /// <param name="desc">Description for this action</param>
-MacroAction::MacroAction(const short newPayload, const std::string& desc)
-{
-    description = desc;
-    ActionCode = MacroActionCode::VirtualKey;
-    payload = newPayload;
-}
+MacroAction::MacroAction(const short newPayload, const std::string& desc) : payload{ newPayload }, description{ desc }, ActionCode{ MacroActionCode::VirtualKey } {}
 
 /// <summary>
 /// Retrieves action enum code

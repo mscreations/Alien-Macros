@@ -40,11 +40,8 @@ ProgSettings::ProgSettings(bool skipAll) : target{ 0,0,0,0 }, configFilename{}
     }
 }
 
-ProgSettings::ProgSettings(ProgSettings& ps)
+ProgSettings::ProgSettings(ProgSettings& ps) : target{ ps.target }, device{ std::move(ps.device) }
 {
-    target = ps.target;
-    device = std::move(ps.device);
-
     if (!ps.macrolist.empty())
     {
         macrolist = ps.macrolist;
@@ -186,19 +183,16 @@ bool ProgSettings::Load()
 
         if (success)
         {
-            success = false;
-
             HidDevices devices{};
             devices.FindAllHidDevices(true);
             std::vector<HidDevicePtr>& list = devices.getDevices();
-            for (auto& dev : list)
+            if (auto it = std::find_if(list.begin(), list.end(), [this](const HidDevicePtr& dev) { return dev->IsKnownTarget(target); }); it != list.end())
             {
-                if (dev->IsKnownTarget(target))
-                {
-                    device = std::move(dev);
-                    success = true;
-                    break;
-                }
+                device = std::move(*it);
+            }
+            else
+            {
+                success = false;
             }
         }
     }
