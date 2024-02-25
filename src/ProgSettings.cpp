@@ -55,18 +55,20 @@ bool ProgSettings::Save() const
 {
     bool success = true;
 
-    std::unordered_map<std::string, unsigned short> targetData = { {"targetVID", target.targetVID},
-                       {"targetPID", target.targetPID},
-                       {"usagePage", target.usagePage},
-                       {"usageCode", target.usageCode} };
-    for (auto& [key, value] : targetData)
-    {
-        success &= RegistryHelper::WriteDwordValue(key, value, "TargetData");
-    }
-
     if (device->getDevicePath().length() > 0)
     {
         success &= RegistryHelper::WriteStringValue("DevicePath", device->getDevicePath());
+    }
+    else
+    {
+        std::unordered_map<std::string, unsigned short> targetData = { {"targetVID", target.targetVID},
+                           {"targetPID", target.targetPID},
+                           {"usagePage", target.usagePage},
+                           {"usageCode", target.usageCode} };
+        for (auto& [key, value] : targetData)
+        {
+            success &= RegistryHelper::WriteDwordValue(key, value, "TargetData");
+        }
     }
 
     for (auto& [key, ma] : macrolist)
@@ -155,7 +157,6 @@ std::unordered_map<short, MacroAction> ProgSettings::getMacros() const { return 
 
 bool ProgSettings::Load()
 {
-    std::vector<std::string> values = RegistryHelper::EnumerateSubValues();
     std::string devicepath{};
     bool success{ false };   // stores overall status
 
