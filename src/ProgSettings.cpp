@@ -134,11 +134,6 @@ std::ostream& operator<<(std::ostream& strm, const ProgSettings& ps)
     return strm;
 }
 
-unsigned short ProgSettings::getVID() const { return target.targetVID; }
-unsigned short ProgSettings::getPID() const { return target.targetPID; }
-unsigned short ProgSettings::getUsagePage() const { return target.usagePage; }
-unsigned short ProgSettings::getUsageCode() const { return target.usageCode; }
-
 /// <summary>
 /// Retrieves the description of the specified macro scancode. Returns generic message if macro doesn't exist.
 /// </summary>

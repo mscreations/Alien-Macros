@@ -42,11 +42,6 @@ public:
     ProgSettings(ProgSettings& ps);
 
     HidDevicePtr getDevice();
-
-    unsigned short getVID() const;
-    unsigned short getPID() const;
-    unsigned short getUsagePage() const;
-    unsigned short getUsageCode() const;
     std::string getDescription(const short scancode) const;
     std::unordered_map<short, MacroAction> getMacros() const;
 
