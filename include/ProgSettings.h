@@ -38,7 +38,7 @@ class ProgSettings
     [[nodiscard]] bool Save() const;
 
 public:
-    ProgSettings();
+    ProgSettings(bool skipAll = false);
     ProgSettings(ProgSettings& ps);
 
     HidDevicePtr getDevice();

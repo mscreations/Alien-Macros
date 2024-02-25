@@ -112,7 +112,7 @@ std::unique_ptr<ProgSettings> Setup::invokeSetup()
     // 8. If any macro keys are set to Virtual Keys, ask if user is using an autohotkey script that needs to run with this.
     //      a. If so, Set parameter in registry with script name so it can be started on this program startup.
 
-    auto ps = std::make_unique<ProgSettings>();
+    auto ps = std::make_unique<ProgSettings>(true);
     do
     {
         ps->device = ChooseTarget();

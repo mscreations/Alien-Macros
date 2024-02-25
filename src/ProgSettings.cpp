@@ -31,8 +31,9 @@
 #include "setup.h"
 #include "RegistryHelper.h"
 
-ProgSettings::ProgSettings() : target{ 0,0,0,0 }, configFilename{}
+ProgSettings::ProgSettings(bool skipAll) : target{ 0,0,0,0 }, configFilename{}
 {
+    if (skipAll) { return; }
     if (!Load())
     {
         std::cerr << "Unable to load configuration from Registry" << std::endl;
